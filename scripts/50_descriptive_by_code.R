@@ -1,9 +1,8 @@
+# 50 where the correct icd-10-ca code ranks, per model, per icd-9 code
+# writes per_code_rank.csv, 51_ reads it
+
 source(if (file.exists("paths.R")) "paths.R" else "scripts/paths.R")
 source("scripts/pipeline_lib.R")
-
-# per icd-9 code, not aggregated. where does the correct icd-10-ca code actually
-# sit in each model's ranking, and what kind of code is it. everything else in
-# results/ collapses this to one number per condition.
 
 ORIG <- "data/original"
 GEN  <- "data/generated"
@@ -21,8 +20,7 @@ ccs   <- setNames(as.character(lab9$CCS_ID), as.character(lab9$ICD_9_CM))
 
 targets <- split(as.character(man$`ICD-10-CA`), as.character(man$`ICD-9-CM`))
 
-# a residual code is a bucket rather than a named condition. these are the ones
-# the failures kept landing on, so it gets its own column instead of a guess
+# catch-all codes, failures keep landing here
 RESID <- "other|unspecified|not elsewhere classified|nec\\b|nos\\b|ill-defined|without specification"
 
 rows <- list()

@@ -1,10 +1,7 @@
-# stitches the per track cv outputs back together after running both in parallel
-#
-#   Rscript 12_cv_rerank.R 10_9 &   Rscript 12_cv_rerank.R 8_9 &
-#   Rscript 12b_merge_cv_results.R
-#
-# running 12_ with no arguments does both tracks and writes these files directly,
-# in which case this isnt needed
+# 12b merges the per track 12_ outputs after a parallel run
+#   Rscript scripts/12_cv_rerank.R 10_9 &  Rscript scripts/12_cv_rerank.R 8_9 &
+#   Rscript scripts/12b_merge_cv_results.R
+# not needed if 12_ ran with no arguments
 
 source(if (file.exists("paths.R")) "paths.R" else "scripts/paths.R")
 

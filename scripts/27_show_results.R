@@ -1,3 +1,5 @@
+# 27 prints every headline number from saved results, about a second
+
 source(if (file.exists("paths.R")) "paths.R" else "scripts/paths.R")
 
 suppressMessages({library(dplyr)})
@@ -13,7 +15,7 @@ tname <- function(x) ifelse(x == "10_9", "ICD-9 to ICD-10-CA", "ICD-9 to ICDA-8"
 hdr(1, "where the project started and where it is now")
 d <- get("cv_rerank_results.csv")
 if (!is.null(d)) {
-  # the f1 column is the 3rd of each 4-column metric block
+  # f1 = 3rd col per metric block
   f1 <- function(row, pre) {
     cols <- grep(pre, names(d), fixed = TRUE, value = TRUE)
     as.numeric(row[cols[3]])
@@ -38,9 +40,7 @@ if (!is.null(d)) {
   cat("\n  of every correct answer in the manual crosswalk, the share that\n")
   cat("  survives each stage of the original pipeline:\n\n")
   cat(sprintf("  %-36s %10s %10s\n", "", "ICD-10-CA", "ICDA-8"))
-  # pct_in_universe is 100 by construction, the matrix scores every code
-  # against every target. it is a check that no validation pair names a code
-  # missing from the label files, not a stage anything can be lost at
+  # pct_in_universe is always 100, just a check
   rows <- list(
     c("survives the similarity cutoff",  "pct_pass_threshold"),
     c("in the co-occurrence list",       "pct_in_cooc"),
@@ -98,7 +98,7 @@ for (tr in c("10_9", "8_9")) {
   if (is.null(d)) next
   full <- d$f1[d$variant == "full"]
   cat(sprintf("\n%s   (full system = %.3f)\n", tname(tr), full))
-  # the rank_* rows swap the scoring method, they do not remove a feature
+  # rank_* rows swap scorer, not drop feature
   x <- d[grepl("^no_", d$variant), ] %>% mutate(delta = f1 - full) %>% arrange(delta)
   for (i in seq_len(nrow(x)))
     cat(sprintf("  remove %-20s f1 %.3f   %+.3f\n",
@@ -116,7 +116,7 @@ for (tr in c("10_9", "8_9")) {
   d <- get(sprintf("learning_curve_%s.csv", tr))
   if (is.null(d)) next
   cat(sprintf("\n%s\n", tname(tr)))
-  # the largest size can be empty when the track has fewer codes than that
+  # biggest size can be empty
   d <- d[!is.na(d$f1_mean), ]
   for (i in seq_len(nrow(d)))
     cat(sprintf("  %4d training codes   f1 %.3f  (sd %.3f)\n",

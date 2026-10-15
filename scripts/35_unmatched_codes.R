@@ -1,18 +1,6 @@
-# how the pipeline handles icd-9 codes that have no correct answer
-#
-# 9 icd-9-cm codes have no icd-10-ca reference match and 52 have no icda-8
-# match. they used to be dropped before scoring, so a wrong mapping on them
-# cost nothing. they are scored now.
-#
-# f1 catches that when it goes wrong, because a mapping on one of them is a
-# false positive. what f1 cannot do is credit getting them right. a code with
-# no correct answer has no true positive to earn, so staying silent scores the
-# same as never being tested. this reports that half directly.
-#
-# it also counts the codes that do have answers and got nothing, because the
-# same silence causes both and reporting only the first is misleading
-#
-# usage: Rscript 35_unmatched_codes.R
+# 35 what the pipeline does with icd-9 codes that have no correct answer
+# counts mapped vs silent, for codes with and without an answer
+# writes unmatched_code_handling.csv and its plot
 
 source(if (file.exists("paths.R")) "paths.R" else "scripts/paths.R")
 source("scripts/pipeline_lib.R")
@@ -36,9 +24,7 @@ TRACKS <- list(
                 manual_target_col = "ICDA-8", run = run_pipeline_8_9_cached)
 )
 
-# the label only matrices. the ICD code used to be pasted onto the front of
-# every label before embedding, which broke the similarity scores. see
-# 41_identical_labels.R for the proof
+# label only matrices, see 41_identical_labels.R
 SIM <- list(
   ClinicalBERT = list(`10_9` = file.path(GEN, "cosine_similarity_matrices_10_9_clinicalbert_base_nocode.xlsx"),
                       `8_9`  = file.path(GEN, "cosine_similarity_matrices_8_9_clinicalbert_base_nocode.xlsx")),
@@ -86,9 +72,7 @@ write.csv(out, out_path("unmatched_code_handling.csv"), row.names = FALSE)
 cat("\n=== codes with no correct answer, and the cost of the silence that gets them right ===\n")
 print(as.data.frame(out %>% select(-track_label)), row.names = FALSE)
 
-# counts, not shares. the two groups have different sizes, 52 codes with no
-# answer against 302 with one, so a percentage axis put every red bar near 100%
-# and every grey bar near zero and compared nothing
+# counts not shares, group sizes differ
 fig <- out %>%
   transmute(track_label, model,
             `mapped a code that has no answer` = wrongly_mapped,

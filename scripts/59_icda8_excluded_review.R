@@ -1,9 +1,10 @@
+# 59 review workbook for the 52 codes with no icda-8 match
+# reads 52_codes_no_icda8.xlsx (52_) and 52_codes_accuracy_effect.csv (58_)
+# writes review/52_codes_review.xlsx
+
 source(if (file.exists("paths.R")) "paths.R" else "scripts/paths.R")
 source("scripts/pipeline_lib.R")
 suppressMessages(library(openxlsx))
-
-# review workbook for the 52 icd-9 codes with no icda-8 match.
-# reads 52_codes_no_icda8.xlsx (52_) and 52_codes_accuracy_effect.csv (58_)
 
 ORIG <- "data/original"
 GEN  <- "data/generated"
@@ -20,7 +21,6 @@ stopifnot(nrow(base) == 52)
 a8    <- read_excel(LAB, sheet = "ICDA-8-3Level")
 a8lab <- setNames(as.character(a8$ICDA_8_LABEL), as.character(a8$ICDA_8))
 
-# top cosine match for each code, per model
 top_by_model <- list()
 for (m in names(MODELS)) {
   sheets <- load_similarity_sheets(file.path(GEN, MODELS[[m]]))
@@ -90,7 +90,6 @@ for (p in list(list("ClinicalBERT", CB), list("SapBERT", SB))) {
   r <- which(eff$Model == p[[1]]) + 1
   addStyle(wb, tab, p[[2]], rows = r, cols = seq_along(eff), gridExpand = TRUE, stack = TRUE)
 }
-# line between each model and rule block
 blk <- paste(eff$Model, eff$`Rule number`)
 brk <- which(c(FALSE, blk[-1] != blk[-n])) + 1
 addStyle(wb, tab, SEP, rows = brk, cols = seq_along(eff), gridExpand = TRUE, stack = TRUE)

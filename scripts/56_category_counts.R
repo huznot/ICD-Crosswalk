@@ -1,21 +1,10 @@
+# 56 per ccs category counts at the plain cutoffs, icd-9 to icd-10-ca
+# most categories are tiny, so code counts stay in every sheet
+# writes workbooks/4_counts_by_ccs_category.xlsx
+
 source(if (file.exists("paths.R")) "paths.R" else "scripts/paths.R")
 source("scripts/pipeline_lib.R")
 suppressMessages(library(openxlsx))
-
-# per ccs category counts at the plain cutoffs, as the basis for choosing which
-# categories are worth looking at.
-# 31_category_breakdown.R already broke the categories down, but at the old
-# relative threshold settings out of full_grid_best.csv. this is the same shape
-# at the cutoff each model actually does best at, and with the raw counts kept
-# rather than the per category f1 on its own.
-#
-# the caution that has to travel with this table: most ccs categories are tiny,
-# so a per category f1 is often computed off one or two pairs and swings between
-# 0 and 1 for reasons that have nothing to do with the model. the code counts are
-# in every sheet so that is always visible, and the single code categories are
-# flagged.
-#
-# icd-9 to icd-10-ca only. the plain cutoffs were only worked out on that track.
 
 ORIG <- "data/original"
 GEN  <- "data/generated"
@@ -67,7 +56,7 @@ for (m in names(MODELS)) {
   au  <- select_rows_by_flags(mg, b$flag)
   fin <- validate_mapping(man, au, ccs_df, excl, "ICD-10-CA", "ICD_10_CA")
 
-  # the overall row has to match what 53_ already reported or something is off
+  # sanity check against 53_
   mt <- calculate_performance_metrics(fin)
   stopifnot(sum(fin$`True Positive`, na.rm = TRUE) == b$tp,
             sum(fin$`False Positive`, na.rm = TRUE) == b$fp,
@@ -80,8 +69,7 @@ for (m in names(MODELS)) {
               FP = sum(`False Positive`, na.rm = TRUE),
               FN = sum(`False Negative`, na.rm = TRUE), .groups = "drop")
 
-  # left join off ccs_index so all 130 categories show up, including any the
-  # pipeline emitted nothing for
+  # left join so all 130 show
   per <- ccs_index %>%
     left_join(per, by = "CCS_ID") %>%
     mutate(across(c(`ICD-9 codes seen`, TP, FP, FN), ~ tidyr::replace_na(.x, 0L)))
@@ -126,8 +114,7 @@ for (m in names(MODELS)) {
 cb <- all_cat[all_cat$Model == "ClinicalBERT",
               setdiff(names(all_cat), c("Model", "Cosine cutoff", "Top N co-occurring"))]
 
-## how lopsided the categories are. this is the concrete version of "too much
-## data", and it is what says which categories can carry a number at all
+# how lopsided the categories are
 size <- all_cat %>%
   filter(Model == "ClinicalBERT") %>%
   mutate(band = cut(`ICD-9 codes in the category`, c(0, 1, 2, 4, 9, Inf),

@@ -1,7 +1,9 @@
+# 58 icd-9 to icda-8 scores with all 52 no-match codes kept in
+# every cutoff x top n x rule, both models
+# writes 52_codes_accuracy_effect.csv, 59_ reads it
+
 source(if (file.exists("paths.R")) "paths.R" else "scripts/paths.R")
 source("scripts/pipeline_lib.R")
-
-# icd-9 to icda-8 scores with all 52 no-match codes kept in, every cutoff x top n
 
 ORIG <- "data/original"
 GEN  <- "data/generated"
@@ -66,7 +68,7 @@ eff <- do.call(rbind, rows)
 eff <- eff[order(eff$Model, eff$`Rule number`, eff$`Similarity threshold`,
                  eff$`Top N co-occurring`), ]
 
-# best f1 per model and rule, ties go to the lower cutoff and top n
+# ties go to lower cutoff/top n
 best <- unlist(lapply(split(seq_len(nrow(eff)), paste(eff$Model, eff$`Rule number`)),
                       function(i) i[order(-eff$F1[i], eff$`Similarity threshold`[i],
                                           eff$`Top N co-occurring`[i])][1]))

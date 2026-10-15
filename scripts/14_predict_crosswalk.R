@@ -1,12 +1,7 @@
-# produces the actual crosswalk
-#
-# 12_ measures how good the system is, this is the system. trains on every code
-# with a known answer then maps the ones without, which is what youd run on a
-# real legacy code set
-#
-# each mapping gets a confidence and a triage label. the threshold comes from
-# 13_ which derives it from out of fold predictions, so it isnt tuned on
-# anything this script sees
+# 14 builds the actual crosswalk with the reranker
+# trains on every code with an answer, maps the rest
+# threshold comes from 13_, so it isn't tuned here
+# writes predicted_crosswalk.csv and predicted_crosswalk_summary.csv
 
 source(if (file.exists("paths.R")) "paths.R" else "scripts/paths.R")
 source("scripts/pipeline_lib.R")

@@ -1,3 +1,6 @@
+# 47 rewrites notes in the 9 codes workbook in place
+# keeps the hand formatting 44_ would wipe
+
 source(if (file.exists("paths.R")) "paths.R" else "scripts/paths.R")
 suppressMessages(library(openxlsx))
 

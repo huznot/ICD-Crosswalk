@@ -1,19 +1,12 @@
-# are the multiple targets of one source code clustered in the target system
-#
-# icd-10 splits single icd-9 concepts into adjacent codes, 250 diabetes becomes
-# E10 E11 E13 E14 which is the defined icd-10 diabetes block. coders work from
-# that structure, find the block and take what fits
-#
-# the reranker scores candidates independently and has no notion of a block,
-# which is why it emits the strongest target and stops. if the true sets really
-# are contiguous, expanding around a confident prediction should recover the rest
+# 22 are a code's targets clustered together in the target system
+# and would expanding around a confident pick recover the rest
+
 source(if (file.exists("paths.R")) "paths.R" else "scripts/paths.R")
 source("scripts/pipeline_lib.R")
 
 OUT_DIR <- "results"
 ORIG <- "data/original/ICD_Codes_Files_and_Validation_Data"
 
-# numeric part of a target code, for measuring adjacency
 codenum <- function(x) suppressWarnings(as.numeric(gsub("[^0-9]", "", x)))
 codealpha <- function(x) gsub("[0-9]", "", x)
 
@@ -46,10 +39,7 @@ for (tr in names(TRACKS)) {
   cat(sprintf("  median span %g, mean targets %.2f\n", median(stats$span), mean(stats$n)))
 }
 
-# what would neighbour expansion recover
-# take the auto accepted mappings at the 95% precision point and add any pooled
-# candidate sharing the letter prefix and within a numeric span, if the reranker
-# gave it at least a modest score
+# neighbour expansion on auto-accepted set
 cat("\n\n######## neighbour expansion on the auto-accepted set ########\n")
 preds <- readRDS(out_path("cv_rerank_predictions.rds"))
 ops   <- read.csv(out_path("precision_coverage_operating_points.csv"))

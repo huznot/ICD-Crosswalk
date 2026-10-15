@@ -1,10 +1,10 @@
+# 53 raw counts behind each cutoff, from absolute_threshold_grid.csv
+# nothing recomputed
+# writes workbooks/1_threshold_frequencies.xlsx
+
 source(if (file.exists("paths.R")) "paths.R" else "scripts/paths.R")
 source("scripts/pipeline_lib.R")
 suppressMessages(library(openxlsx))
-
-# raw counts behind each cutoff rather than the precision and recall summaries.
-# every number here already exists in absolute_threshold_grid.csv, this only
-# lays it out as counts. no new runs, nothing recomputed.
 
 ORIG <- "data/original"
 GEN  <- "data/generated"
@@ -13,8 +13,7 @@ OUT  <- out_path("1_threshold_frequencies.xlsx")
 
 res <- read.csv(out_path("absolute_threshold_grid.csv"), stringsAsFactors = FALSE)
 
-# the size of the problem. one similarity matrix gives the two counts, the
-# validation sheet gives how many pairs are actually correct
+# sheet 1: size of the problem
 sheets <- load_similarity_sheets(
   file.path(GEN, "cosine_similarity_matrices_10_9_clinicalbert_base_nocode.xlsx"))
 n_icd9 <- length(unique(unlist(lapply(sheets, function(d) setdiff(names(d), names(d)[1])))))
@@ -36,9 +35,7 @@ res$model <- factor(res$model, levels = MODEL_ORDER)
 
 pct <- function(x, d) sprintf("%.2f%%", 100 * x / d)
 
-## sheet 2. the similarity step on its own, before co-occurrence is brought in.
-## this is the "how many of all possible pairs does the cutoff call similar"
-## question, answered in counts
+# sheet 2: similarity step alone
 step <- unique(res[res$mode == "absolute",
                    c("model", "threshold", "sim_pairs_kept", "icd9_with_any_sim")])
 step <- step[order(step$model, step$threshold), ]
@@ -56,9 +53,7 @@ step <- data.frame(
 cat("pairs surviving the cosine cutoff, before co-occurrence\n")
 print(step, row.names = FALSE)
 
-## sheet 3. the full grid as counts. one row per rule, which is a model, a
-## cutoff, how deep the co-occurrence list goes and which of the four
-## combination rules is used
+# sheet 3: full grid as counts
 counts <- function(d) {
   d <- d[order(d$model, d$threshold, d$top_n, d$flag), ]
   data.frame(
@@ -79,8 +74,7 @@ counts <- function(d) {
 abs_counts <- counts(res[res$mode == "absolute", ])
 rel_counts <- counts(res[res$mode == "relative", ])
 
-## sheet 4. the single best rule per model, so the operating point is not
-## buried in the full grid
+# sheet 4: best rule per model
 best <- do.call(rbind, lapply(MODEL_ORDER, function(m) {
   d <- res[res$model == m & res$mode == "absolute", ]
   d[which.max(d$f1), ]
@@ -92,8 +86,7 @@ print(best_t[, c("Model", "Cosine cutoff", "Top N co-occurring", "Mappings produ
                  "True positives", "False positives", "False negatives", "F1")],
       row.names = FALSE)
 
-## sheet 5. the plain cutoff against the old rule, in counts, which is what
-## says whether the simpler cutoff costs anything
+# sheet 5: plain cutoff vs old rule
 side <- do.call(rbind, lapply(MODEL_ORDER, function(m) {
   a <- res[res$model == m & res$mode == "absolute", ]
   r <- res[res$model == m & res$mode == "relative", ]

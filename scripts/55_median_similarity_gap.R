@@ -1,13 +1,10 @@
+# 55 why sapbert's median similarity sits lower than clinicalbert's
+# correct pairs vs everything else, per model
+# writes workbooks/3_similarity_gap_by_model.xlsx
+
 source(if (file.exists("paths.R")) "paths.R" else "scripts/paths.R")
 source("scripts/pipeline_lib.R")
 suppressMessages(library(openxlsx))
-
-# why SapBERT's median similarity sits so much lower than ClinicalBERT's.
-# this splits every one
-# of the 721,452 possible pairs into the ones the validation data marks correct
-# and everything else, and scores the two groups separately for each model.
-# the median on its own is not the interesting number. the distance between the
-# two groups is, and that is where ClinicalBERT is weakest.
 
 ORIG <- "data/original"
 GEN  <- "data/generated"
@@ -59,8 +56,7 @@ for (m in names(MODELS)) {
       check.names = FALSE)
   }
 
-  ## the table that makes the point. at every cutoff, how many correct pairs
-  ## get through against how many of the ~720,000 that should not
+  # correct pairs kept vs wrong ones
   adm[[length(adm) + 1]] <- data.frame(
     Model = m, `Cosine cutoff` = CUTOFFS,
     `Correct pairs above it` = vapply(CUTOFFS, function(c) sum(cor_s >= c), integer(1)),

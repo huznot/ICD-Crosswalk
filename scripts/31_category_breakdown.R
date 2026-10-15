@@ -1,13 +1,7 @@
-# performance broken down over all 130 ccs categories, not just the ones with
-# the biggest change. 03_ only charted the top 30 by size of change, which hides
-# how uneven the rest is
-#
-# the caution that goes with this: 59 of the 130 categories contain a single
-# icd-9 code, so a per category f1 is often computed from one or two pairs and
-# jumps between 0 and 1 for reasons that have nothing to do with the model.
-# the counts are kept in the output so that is visible
-#
-# usage: Rscript 31_category_breakdown.R
+# 31 f1 over all 130 ccs categories, per model
+# 59 categories hold one code, so their f1 is noisy
+# writes ccs_*.csv and the per category plots
+
 source(if (file.exists("paths.R")) "paths.R" else "scripts/paths.R")
 source("scripts/pipeline_lib.R")
 library(ggplot2)
@@ -19,9 +13,7 @@ OUT_DIR      <- "results"
 
 gen <- function(tag) file.path(GEN_BASE, sprintf("cosine_similarity_matrices_%%s_%s.xlsx", tag))
 
-# no model has been settled on yet, so all three are broken down. the four
-# clinicalbert text preparations are broken down too, to check whether the text
-# cleaning helps in particular clinical areas or only in aggregate
+# all three models plus text variants
 MODELS <- list(
   `ClinicalBERT-original` = file.path(ORIG_BASE, "Cosine_Similarity_Matrices/cosine_similarity_matrices_%s_ClinicalBERT.xlsx"),
   `SapBERT-base`          = file.path(SAPBERT_BASE, "cosine_similarity_matrices_%s_SapBERT.xlsx"),
@@ -32,10 +24,9 @@ MODELS <- list(
   `ClinicalBERT-stopwords-nocode` = gen("clinicalbert_stopwords_nocode")
 )
 
-# models that get their own per category chart, the rest appear in the tables
+# these get their own chart
 CHARTED <- c("ClinicalBERT-original", "SapBERT-base", "mpnet-base")
 
-# pairs charted as a per category difference
 DELTA_PAIRS <- list(
   sapbert_vs_clinicalbert = c("SapBERT-base", "ClinicalBERT-original"),
   textclean_vs_base       = c("ClinicalBERT-stopwords-nocode", "ClinicalBERT-base")
@@ -62,7 +53,6 @@ ccs_full <- read_excel(file.path(ORIG_BASE, "ICD_Codes_Files_and_Validation_Data
   mutate(ICD_9_CM = as.character(ICD_9_CM))
 ccs_df <- ccs_full %>% select(ICD_9_CM, CCS_ID)
 
-# one row per ccs category, with the description and how many icd-9 codes it holds
 ccs_index <- ccs_full %>%
   group_by(CCS_ID) %>%
   summarise(description = first(CCS_CATEGORY_DESCRIPTION),
@@ -130,9 +120,7 @@ for (track_name in names(TRACKS)) {
             row.names = FALSE)
 }
 
-# spread of the per category scores. the unweighted mean treats a category with
-# one code the same as one with eighteen, so the overall f1 from the pooled
-# counts is reported next to it
+# pooled f1 next to the unweighted mean
 category_summary <- breakdown %>%
   group_by(track, model) %>%
   summarise(n_categories = n(),
@@ -152,8 +140,7 @@ category_summary <- breakdown %>%
             .groups = "drop")
 write.csv(category_summary, out_path("ccs_category_summary.csv"), row.names = FALSE)
 
-# same spread split by how many codes a category holds, to show that the low
-# scoring tail is mostly the small categories
+# low tail is mostly tiny categories
 size_summary <- breakdown %>%
   filter(!is.na(f1)) %>%
   mutate(size_group = cut(n_codes, breaks = c(0, 1, 2, 4, Inf),
@@ -163,10 +150,7 @@ size_summary <- breakdown %>%
             sd_f1 = round(sd(f1), 3), .groups = "drop")
 write.csv(size_summary, out_path("ccs_category_by_size.csv"), row.names = FALSE)
 
-# charts
-
-# 130 bars do not fit in one readable column, so they are ranked and dealt into
-# three columns of about 44
+# 130 bars, split into three columns
 deal_columns <- function(df, n_col = 3) {
   per_col <- ceiling(nrow(df) / n_col)
   df %>% arrange(desc(f1), CCS_ID) %>%
@@ -243,7 +227,6 @@ for (track_name in names(TRACKS)) {
   }
 }
 
-# how the two charted differences land across categories, in numbers
 delta_summary <- bind_rows(lapply(names(DELTA_PAIRS), function(nm) {
   p <- DELTA_PAIRS[[nm]]
   bind_rows(lapply(names(TRACKS), function(tr) {
@@ -259,17 +242,13 @@ delta_summary <- bind_rows(lapply(names(DELTA_PAIRS), function(nm) {
 }))
 write.csv(delta_summary, out_path("ccs_delta_summary.csv"), row.names = FALSE)
 
-# the spread itself, which is what the per category standard deviation measures
 dist <- breakdown %>%
   filter(!is.na(f1), model %in% CHARTED) %>%
   mutate(track_label = ifelse(track == "10_9", TRACKS[["10_9"]]$label, TRACKS[["8_9"]]$label))
 means <- dist %>% group_by(track_label, model) %>%
   summarise(mean_f1 = mean(f1), .groups = "drop")
 
-# one panel per model instead of three transparent histograms on top of each
-# other, which just went brown where they overlapped. bars are split by how many
-# codes the category holds, because the spikes at 0 and 1 are mostly categories
-# holding a single code, where one pair decides the whole score
+# one panel per model, overlap is unreadable
 dist <- dist %>%
   mutate(size_group = ifelse(n_codes == 1, "1 code", "2 or more codes"),
          model = factor(model, levels = CHARTED))

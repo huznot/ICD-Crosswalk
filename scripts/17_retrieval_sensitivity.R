@@ -1,13 +1,6 @@
-# is fixing the retrieval config better than tuning it per fold, or did one lucky
-# choice make it look that way
-#
-# 12_ picks K and N inside each fold and gets 0.668 / 0.840. 16_ fixes them and
-# gets more, which looks like per fold tuning overfitting on ~276 training codes.
-# but the fixed values came from medians of what 12_ picked so theyre mildly
-# optimistic
-#
-# this scores the same model over a spread of fixed configs. if most land in the
-# same place the conclusion holds, if only one does it was a lucky pick
+# 17 does fixing the retrieval config beat tuning it per fold
+# scores the same model over a spread of fixed configs
+# usage: Rscript scripts/17_retrieval_sensitivity.R [track]
 
 source(if (file.exists("paths.R")) "paths.R" else "scripts/paths.R")
 source("scripts/pipeline_lib.R")

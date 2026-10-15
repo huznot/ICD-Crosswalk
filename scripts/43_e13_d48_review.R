@@ -1,3 +1,6 @@
+# 43 per code look at icd-9 249 and 239 (e13 and d48 on the icd-10-ca side)
+# writes e13_d48_review.xlsx
+
 source(if (file.exists("paths.R")) "paths.R" else "scripts/paths.R")
 suppressMessages(source("scripts/pipeline_lib.R"))
 suppressMessages({library(readxl); library(openxlsx)})

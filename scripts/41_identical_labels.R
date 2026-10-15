@@ -1,3 +1,7 @@
+# 41 icd-9 / icd-10-ca pairs with identical labels, with and without the code number
+# shows the code prefix broke the similarity scores
+# writes identical_labels.png
+
 source(if (file.exists("paths.R")) "paths.R" else "scripts/paths.R")
 suppressMessages({library(readxl); library(ggplot2)})
 

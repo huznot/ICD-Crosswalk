@@ -1,14 +1,6 @@
-# does the model generalise to clinical areas it has never seen
-#
-# everything so far splits folds by icd-9 code at random which is probably
-# optimistic. codes inside a ccs category are clinically adjacent (140, 141, 142
-# are all head and neck cancers) so a random split often leaves a near neighbour
-# in training
-#
-# deployment doesnt look like that, mapping a legacy code set means whole areas
-# with no examples. so this groups folds by ccs category instead
-#
-# usage: Rscript 19_category_holdout.R [track]
+# 19 holds out whole ccs categories instead of random codes
+# random splits leave near neighbours in training, this is harder
+# usage: Rscript scripts/19_category_holdout.R [track]
 
 source(if (file.exists("paths.R")) "paths.R" else "scripts/paths.R")
 source("scripts/pipeline_lib.R")
@@ -60,14 +52,13 @@ train_ranker <- function(d, fc) xgb.train(
                 nthread = parallel::detectCores()),
   data = xgb.DMatrix(as.matrix(d[, fc]), label = d$y), nrounds = 200, verbose = 0)
 
-# folds by random code, or by whole ccs category
 build_folds <- function(map, k, mode) {
   if (mode == "code") {
     cs <- sample(map$ICD_9_CM)
     return(split(cs, rep(seq_len(k), length.out = length(cs))))
   }
   cats <- sample(unique(map$CCS_ID))
-  # greedily balance categories across folds by size
+  # greedy balance by category size
   sizes <- map %>% count(CCS_ID)
   cats <- sizes$CCS_ID[order(-sizes$n)]
   load <- rep(0, k); assign <- setNames(integer(length(cats)), cats)

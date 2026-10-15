@@ -1,21 +1,8 @@
-# builds a standalone handout of the unmatched code descriptives, to send to
-# someone who does not have the repo open. reads the csvs written by
-# 36_unmatched_descriptives.R and 35_unmatched_codes.R, so run those first.
-#
-# covers, in order: co-occurrence
-# for the codes with no match, cosine similarity against every target code with
-# the average, minimum, maximum, 25th and 75th, the codes that do have a match
-# as the comparison group, the groups together and then each code on its own,
-# what the algorithm emits for them, and whether a threshold on either signal
-# would separate them.
-#
-# the html is one single quoted R string, so apostrophes need a backslash.
-#
-# writes results/unmatched/unmatched_codes_handout.html. to get the pdf:
-#   chrome --headless --disable-gpu --no-pdf-header-footer \
-#     --print-to-pdf=results/unmatched/unmatched_codes.pdf results/unmatched/unmatched_codes_handout.html
-#
-# usage: Rscript 37_unmatched_handout.R
+# 37 standalone html handout of the unmatched code descriptives
+# reads the 35_ and 36_ csvs, run those first
+# the html is one single quoted string, escape apostrophes
+# writes results/unmatched/unmatched_codes_handout.html, for the pdf:
+#   chrome --headless --disable-gpu --no-pdf-header-footer --print-to-pdf=results/unmatched/unmatched_codes.pdf results/unmatched/unmatched_codes_handout.html
 
 source(if (file.exists("paths.R")) "paths.R" else "scripts/paths.R")
 suppressMessages({library(dplyr)})
@@ -31,12 +18,12 @@ hand  <- read.csv(out_path("unmatched_code_handling.csv"), stringsAsFactors = FA
 
 f3 <- function(x) ifelse(is.na(x), "no data", formatC(x, format = "f", digits = 3))
 fn <- function(x) ifelse(is.na(x), "no data", formatC(x, format = "d", big.mark = ","))
-# quartiles land on halves when the count is even, so only show a decimal then
+# even counts give .5 quartiles
 fq <- function(x) ifelse(is.na(x), "no data",
                   ifelse(x == round(x), formatC(x, format = "d", big.mark = ","),
                          formatC(x, format = "f", digits = 1, big.mark = ",")))
 
-# minimal html table, no library, the numbers are already rounded upstream
+# no library, numbers already rounded
 tbl <- function(df, headers, align_right, cls = "") {
   th <- paste0("<th>", headers, "</th>", collapse = "")
   rows <- apply(df, 1, function(r) {
@@ -48,7 +35,6 @@ tbl <- function(df, headers, align_right, cls = "") {
          paste(rows, collapse = ""), "</tbody></table>")
 }
 
-# the two groups together, with the codes that do have a match alongside
 GRP <- c("no reference match", "has a reference match")
 lab <- c("no reference match" = "no match", "has a reference match" = "has a match")
 tgt <- c("10_9" = "ICD-10-CA", "8_9" = "ICDA-8")
@@ -79,8 +65,7 @@ grp_cooc_tbl <- function() {
       c(FALSE, FALSE, rep(TRUE, 8)), "grp")
 }
 
-# per code
-# ends = NULL lists every code, ends = n keeps only the n highest and n lowest
+# ends = n keeps top and bottom n
 sim_tbl <- function(tk, ends = NULL) {
   d <- sim %>% filter(model == MODEL, track == tk, group == "no reference match") %>%
     arrange(desc(max))
@@ -114,12 +99,10 @@ rng <- function(tk, grp) {
 n_of <- function(track, grp) sum(sim$model == MODEL & sim$track == track & sim$group == grp)
 n_all <- function(track) n_of(track, "no reference match") + n_of(track, "has a reference match")
 
-# the lowest maximum in the crosswalk, and the cutoff it faces at a given
-# threshold. together these show the cutoff is relative
+# shows the cutoff is relative
 weakest_best <- function(tk) f3(min(sim$max[sim$model == MODEL & sim$track == tk]))
 floor_at <- function(tk, thr) f3(thr * min(sim$max[sim$model == MODEL & sim$track == tk]))
 
-# middle value of the highest co-occurrence count, per group
 cooc_med_raw <- function(tk, grp) {
   median(cooc$max[cooc$track == tk & cooc$group == grp & !is.na(cooc$max)])
 }
@@ -128,8 +111,7 @@ n_above_mid <- function(tk) {
   sum(cooc$track == tk & cooc$group == "no reference match" &
         !is.na(cooc$max) & cooc$max > cooc_med_raw(tk, "has a reference match"))
 }
-# matched codes actually in the co-occurrence file, the denominator the
-# co-occurrence cutoff cost is counted against
+# denominator for the cooc cutoff cost
 n_cooc_present <- function(tk) {
   sum(cooc$track == tk & cooc$group == "has a reference match" & !is.na(cooc$max))
 }
@@ -138,10 +120,8 @@ cooc_span <- function(tk, which) {
   fn(if (which == "low") min(v) else max(v))
 }
 
-# what the pipeline emits for these codes, from 35_
 h <- function(tk, col) hand[[col]][hand$track == tk & hand$model == MODEL]
 
-# the cutoff that would exclude every unmatched code, and what it costs
 cut_of <- function(tk, sig, field) {
   d <- summ %>% filter(track == tk, signal == sig, group == "no reference match",
                        is.na(model) | model == MODEL)

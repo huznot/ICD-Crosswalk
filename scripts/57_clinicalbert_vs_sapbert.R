@@ -1,17 +1,10 @@
+# 57 clinicalbert vs sapbert on the same top n and rule
+# only the cosine cutoff differs, set from each model's score distribution
+# writes head_to_head/clinicalbert_vs_sapbert.xlsx
+
 source(if (file.exists("paths.R")) "paths.R" else "scripts/paths.R")
 source("scripts/pipeline_lib.R")
 suppressMessages(library(openxlsx))
-
-# head to head, clinicalbert against sapbert. the
-# cutoffs were set from each model's score distribution, not tuned for f1, and
-# they are the only thing allowed to differ between the two models. top n and
-# the rule are held the same for both, even where that is not the best setting
-# for one of them, so the comparison is fair and shows where each one does
-# badly. mpnet is out.
-#
-# rule 4 for both. under rule 1 the cutoff and top n barely change what comes
-# out (it only takes the single top cosine and top co-occurring code), so the
-# grid would look flat for clinicalbert.
 
 ORIG <- "data/original"
 GEN  <- "data/generated"
@@ -30,8 +23,7 @@ RULE_TEXT <- c("1" = "top cosine or top co-occurrence",
                "2" = "top cosine or in both lists",
                "3" = "top co-occurrence or in both lists",
                "4" = "any of the three")
-# all four rules, in the overall tab and then one category tab each, so a
-# category can be read under whichever rule gets picked
+# all four rules, one category tab each
 
 ccs_full <- read_excel(LAB, sheet = "CCS ICD-9-CM-3Level") %>%
   mutate(ICD_9_CM = as.character(ICD_9_CM))
@@ -47,7 +39,7 @@ co_by_n <- setNames(lapply(TOP_NS, function(tn)
   get_cooccurrence_codes_from_df(cooc, tn, "ICD_9_CM_Code3", "ICD_10_CA_Code3", "ICD_10_CA")),
   as.character(TOP_NS))
 
-# the settings that were already in the old grid are checked against it below
+# overlapping settings checked against the old grid
 grid <- read.csv(out_path("absolute_threshold_grid.csv"), stringsAsFactors = FALSE)
 
 prf <- function(tp, fp, fn) list(
@@ -69,8 +61,7 @@ for (m in names(MODELS)) {
   for (thr in MODELS[[m]]$cutoffs) {
     sim <- long %>% filter(Similarity >= thr)
     for (tn in TOP_NS) {
-      # the merge is the slow part and does not depend on the rule, so it is
-      # done once and the four rules are applied to it
+      # merge is slow, reuse across rules
       mg <- merge_and_flag(sim, co_by_n[[as.character(tn)]], "ICD_10_CA",
                            find_icd10ca_chapter, chapter_alignment_10)
       for (rl in RULES) {
@@ -124,7 +115,7 @@ bycat   <- bycat[order(as.numeric(bycat$`CCS ID`), match(bycat$Model, names(MODE
 stopifnot(nrow(bycat) == nrow(overall) * nrow(ccs_index))
 bycat_by_rule <- split(bycat, match(bycat$Rule, RULE_TEXT))
 
-# correct pairs per category do not depend on the model, so this is one table
+# correct pairs don't depend on model
 size <- bycat[bycat$Model == "ClinicalBERT" & bycat$`Cosine cutoff` == 0.90 &
               bycat$`Top N co-occurring` == 25 & bycat$Rule == RULE_TEXT[["4"]], ] %>%
   mutate(band = cut(`ICD-9 codes in the category`, c(0, 1, 2, 4, 9, Inf),
@@ -139,13 +130,7 @@ size$`Share of correct pairs` <- sprintf("%.0f%%", 100 * size$`Correct pairs to 
                                            sum(size$`Correct pairs to find`))
 names(size)[1] <- "Category size"
 
-## one row per category: the best each model manages anywhere in the grid, and
-## the setting that produced it. this is the tab to present from, 130 rows
-## instead of 3,900. every table carries the cutoff and top n that produced it,
-## so the winning setting travels with each score
-# where several settings tie on f1, pick one deterministically rather than
-# whichever row happened to come first: fewest false positives, then the
-# smallest cutoff, top n and rule. otherwise the setting shown moves around
+# best per category, ties broken deterministically
 win <- bycat %>%
   mutate(.rule = match(Rule, RULE_TEXT)) %>%
   arrange(`CCS ID`, Model, desc(F1), `False positives`,
@@ -188,8 +173,7 @@ SB   <- createStyle(fgFill = "#FDF1E4")   # sapbert rows
 SEP  <- createStyle(border = "top", borderColour = "#808080", borderStyle = "thin")
 wb   <- createWorkbook()
 
-# red to green across the F1 column, so the weak categories stand out when
-# scrolling rather than needing every number read
+# red to green on f1
 scale3 <- function(sheet, col, n)
   conditionalFormatting(wb, sheet, cols = col, rows = 2:(n + 1), type = "colourScale",
                         style = c("#F8696B", "#FFEB84", "#63BE7B"), rule = c(0, 0.4, 0.8))
@@ -208,7 +192,7 @@ add <- function(name, df, widths, filter = FALSE, freeze_col = 1, band_model = T
     if (length(sb)) addStyle(wb, name, SB, rows = sb, cols = seq_along(widths),
                              gridExpand = TRUE, stack = TRUE)
   }
-  # a line between categories so the blocks are visible at a glance
+  # line between categories
   if ("CCS ID" %in% names(df)) {
     brk <- which(c(TRUE, df$`CCS ID`[-1] != df$`CCS ID`[-n])) + 1
     addStyle(wb, name, SEP, rows = brk, cols = seq_along(widths),
@@ -224,7 +208,7 @@ add("category summary", summ, c(7, 40, 13, 13, 17, 15, 14, 30, 15, 13, 12, 30, 1
     filter = TRUE, freeze_col = 3)
 for (rl in RULES) {
   d <- bycat_by_rule[[as.character(rl)]]
-  d$Rule <- NULL   # the tab name already says which rule it is
+  d$Rule <- NULL   # tab name already says the rule
   add(sprintf("rule %d by category", rl), d,
       c(7, 42, 13, 14, 12, 12, 14, 14, 12, 12, 13, 10, 9, 8),
       filter = TRUE, freeze_col = 4)

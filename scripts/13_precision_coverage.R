@@ -1,12 +1,7 @@
-# precision at coverage, and a review queue
-#
-# f1 assumes the system has to answer everything. it doesnt, some codes have no
-# counterpart at all and what matters in practice is knowing which mappings are
-# safe to accept without checking
-#
-# reports precision vs coverage, the threshold that hits a target precision and
-# how much of the crosswalk it builds there, and an auto-accept / review / no
-# candidate split. runs off the out of fold predictions from 12_
+# 13 precision vs coverage for the reranker, and a review queue
+# auto-accept / review / no candidate split at 95% precision
+# reads cv_rerank_predictions.rds from 12_
+
 source(if (file.exists("paths.R")) "paths.R" else "scripts/paths.R")
 source("scripts/pipeline_lib.R")
 
@@ -24,11 +19,10 @@ curve_rows <- list(); op_rows <- list(); triage_rows <- list()
 for (tr in unique(preds$track)) {
   d <- preds %>% filter(track == tr)
   n_codes <- n_distinct(d$ICD_9_CM)
-  n_true  <- sum(d$y)   # true pairs reachable in the pool (the ceiling)
+  n_true  <- sum(d$y)   # reachable true pairs, the ceiling
   cat(sprintf("\n######## track %s: %d candidates, %d codes, %d reachable true pairs ########\n",
               tr, nrow(d), n_codes, n_true))
 
-  # precision / coverage curve over the emission threshold
   for (tau in c(seq(0.01, 0.95, by = 0.01), 0.97, 0.99)) {
     em <- d %>% filter(.p_score >= tau)
     tp <- sum(em$y); fp <- nrow(em) - tp
@@ -43,24 +37,20 @@ for (tr in unique(preds$track)) {
 
   cur <- bind_rows(curve_rows) %>% filter(track == tr)
 
-  # operating points at target precision. the practical question is, if we insist
-  # on being right 95% of the time how much can we build automatically
+  # how much can we map at 95%
   for (target in c(0.80, 0.90, 0.95, 0.99)) {
     ok <- cur %>% filter(!is.na(precision), precision >= target)
     if (!nrow(ok)) {
       cat(sprintf("  precision >= %.2f : NOT ACHIEVABLE at any threshold\n", target)); next
     }
-    # among thresholds meeting the precision target, take the one that emits most
+    # most mappings among those hitting target
     b <- ok %>% slice_max(n_emitted, n = 1, with_ties = FALSE)
     cat(sprintf("  precision >= %.2f : tau %.2f -> %d mappings, %.1f%% of codes covered, actual precision %.3f, recall %.3f\n",
                 target, b$tau, b$n_emitted, 100*b$code_coverage, b$precision, b$recall))
     op_rows[[length(op_rows)+1]] <- b %>% mutate(precision_target = target)
   }
 
-  # triage, what a coder would actually see
-  # auto-accept   : candidates above the 95%-precision threshold
-  # review        : the code has candidates, but none confident enough
-  # no candidate  : nothing plausible retrieved at all
+  # triage buckets, as a coder would see
   ok95 <- cur %>% filter(!is.na(precision), precision >= 0.95)
   tau95 <- if (nrow(ok95)) (ok95 %>% slice_max(n_emitted, n = 1, with_ties = FALSE))$tau else NA_real_
   if (!is.na(tau95)) {
@@ -89,7 +79,6 @@ write.csv(curve, out_path("precision_coverage_curve.csv"), row.names = FALSE)
 write.csv(bind_rows(op_rows), out_path("precision_coverage_operating_points.csv"), row.names = FALSE)
 write.csv(bind_rows(triage_rows), out_path("precision_coverage_triage.csv"), row.names = FALSE)
 
-# plot
 png(out_path("plot_precision_coverage.png"), width = 1100, height = 500, res = 110)
 par(mfrow = c(1, 2), mar = c(4.2, 4.2, 3, 1))
 for (tr in unique(curve$track)) {

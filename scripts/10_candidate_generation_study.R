@@ -1,12 +1,7 @@
-# tries to raise the recall ceiling
-#
-# 09_ showed the embedding isnt the problem, every true target is in the
-# similarity matrix but only ~63% (icd-10-ca) / ~85% (icda-8) make it into the
-# pool, capping oracle f1 at 0.770 / 0.920. so vary candidate generation itself:
-#   A. similarity cut, relative (current) vs topk
-#   B. how many co-occurrence candidates
-#   C. chapter filter on or off
-# the chapter filter gets its own output since it drops 48 true pairs on icd-10-ca
+# 10 tries ways to widen the candidate pool and raise the recall ceiling
+# relative vs top-k similarity, co-occurrence depth, chapter filter on/off
+# writes candidate_generation_study.csv and chapter_filter_casualties.csv
+
 source(if (file.exists("paths.R")) "paths.R" else "scripts/paths.R")
 source("scripts/pipeline_lib.R")
 
@@ -49,8 +44,7 @@ true_pairs <- function(tk) {
     filter(!(ICD_9_CM %in% excluded)) %>% distinct()
 }
 
-# full long format similarity, computed once per model x track and reused for
-# every design. this is the expensive part
+# expensive, so compute once per model x track
 long_similarity <- function(path, tcn) {
   sheets <- load_similarity_sheets(path)
   purrr::map_dfr(sheets, function(df) {
@@ -72,7 +66,6 @@ for (tr in names(TRACKS)) {
   }
 }
 
-# chapter distance lookup for an arbitrary pair set
 chapter_ok <- function(icd9, target, tk) {
   d <- compute_chapter_distance(find_icd9cm_chapter(icd9), tk$find_fn(target), tk$align)
   !is.na(d) & d < 1
@@ -122,8 +115,7 @@ for (tr in names(TRACKS)) {
             pool_pairs = nrow(pool),
             pool_per_code = round(nrow(pool) / n_distinct(pool$ICD_9_CM), 2),
             recall_ceiling = round(hit / n_true, 4),
-            # oracle f1 assumes a perfect selector, precision 1 and recall is
-            # the ceiling
+            # oracle assumes a perfect selector
             oracle_f1 = round(2 * (hit/n_true) / (1 + hit/n_true), 4))
         }
       }
@@ -153,7 +145,7 @@ chap_cost <- study %>%
             mean_pool_saved_pct = round(mean(pool_saved_pct), 1), .groups = "drop")
 print(as.data.frame(chap_cost))
 
-# which true pairs the chapter filter destroys
+# true pairs the chapter filter kills
 cas <- list()
 for (tr in names(TRACKS)) {
   tk <- TRACKS[[tr]]

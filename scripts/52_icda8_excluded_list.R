@@ -1,8 +1,9 @@
+# 52 the 52 icd-9 codes with no icda-8 match, with chapter and co-occurrence
+# writes 52_codes_no_icda8.xlsx, 59_ reads it
+
 source(if (file.exists("paths.R")) "paths.R" else "scripts/paths.R")
 source("scripts/pipeline_lib.R")
 suppressMessages({library(openxlsx); library(readxl)})
-
-# the 52 icd-9-cm codes with no icda-8 match in the validation data
 
 ORIG <- "data/original"
 VAL  <- file.path(ORIG, "ICD_Codes_Files_and_Validation_Data/Validation_Data .xlsx")
@@ -46,9 +47,6 @@ j <- match(d$`ICD-9-CM`, m$code)
 d$Notes <- ifelse(is.na(j), "", m$note[j])
 d <- d[order(as.numeric(d$`ICD-9-CM`)), ]
 
-## chapter the icd-9 code sits in, and the icda-8 codes it actually travels
-## with in the co-occurrence data. both are here because the
-## validation says no valid match but the data may still show a companion
 CH9 <- c("1 infectious and parasitic", "2 neoplasms",
          "3 endocrine, nutritional, metabolic", "4 blood and blood-forming organs",
          "5 mental disorders", "6 nervous system and sense organs",
@@ -98,10 +96,7 @@ writeData(wb, 2, ch, headerStyle = createStyle(textDecoration = "bold"))
 setColWidths(wb, 2, cols = 1:2, widths = c(44, 28))
 freezePane(wb, 2, firstActiveRow = 2)
 
-## none of the 52 appear in the icd-9 to icda-8 co-occurrence file at all, and
-## that is the whole reason the pipeline stays silent on them. worth putting
-## beside the icd-10 track, where all 9 excluded codes do have co-occurrence
-## data and all 9 get mapped
+# icd-10 side for comparison
 c10 <- as.character(read_excel(file.path(ORIG, "Co_occurrence/icd_10_9_co_occurrence_3c.xlsx"),
                                sheet = 1)$ICD_9_CM_Code3)
 e10 <- as.character(read_excel(VAL, sheet = "Validation_ICD9_ICD10_Excld")$`ICD-9-CM`)

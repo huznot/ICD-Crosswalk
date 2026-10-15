@@ -1,10 +1,5 @@
-# the out of fold predictions as csv, so the held out numbers can be checked
-# without r. the rds files stay, they are what the scripts load
-#
-# only the predictions are exported. the feature tables are 60mb as csv and 11_
-# rebuilds them in a minute, and base_emit_*.rds is a cache of 224 grid points
-#
-# usage: Rscript 34_export_rds_as_csv.R
+# 34 exports the out of fold predictions as csv, to check without r
+# the rds files stay, the scripts load those
 
 source(if (file.exists("paths.R")) "paths.R" else "scripts/paths.R")
 

@@ -1,3 +1,6 @@
+# 03 charts for the 02_ comparison
+# writes plot_f1_accuracy_comparison.png, plot_ccs_breakdown_*.png, regression_summary.csv
+
 source(if (file.exists("paths.R")) "paths.R" else "scripts/paths.R")
 
 library(dplyr)

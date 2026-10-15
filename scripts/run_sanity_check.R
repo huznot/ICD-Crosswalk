@@ -1,3 +1,5 @@
+# reproduces the original pipeline numbers on the original matrices
+
 source(if (file.exists("paths.R")) "paths.R" else "scripts/paths.R")
 source("scripts/pipeline_lib.R")
 

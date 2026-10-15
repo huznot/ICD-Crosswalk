@@ -1,12 +1,7 @@
-# runs the whole analysis from the committed data, in dependency order.
-# about 45 minutes on 8 cores. run from anywhere:
-#   Rscript run_all.R
-#
-# to skip the slow parameter searches and only rebuild the two stage system:
-#   Rscript run_all.R --quick
-#
-# embeddings are not rebuilt here. data/generated/ is committed, and
-# regenerating it needs python and a gpu, see scripts/run_all_embeddings.sh
+# rebuilds everything from the committed data, in dependency order
+# about 45 min on 8 cores. run from anywhere: Rscript run_all.R
+# --quick skips the parameter searches
+# embeddings aren't rebuilt here, see scripts/run_all_embeddings.sh
 
 source(if (file.exists("scripts/paths.R")) "scripts/paths.R" else "paths.R")
 
@@ -23,7 +18,7 @@ run <- function(script, args = character()) {
   cat(sprintf("----- %s done in %.1f min\n", script, mins))
 }
 
-# the four step pipeline, searched over the full grid
+# four step pipeline, full grid
 if (!QUICK) {
   run("07_full_grid_comparison.R")   # slowest step, all 12 conditions
   run("08_assemble_full_grid.R")     # summary tables and the f1 range plot
@@ -37,12 +32,11 @@ run("12_cv_rerank.R", "8_9")
 run("12b_merge_cv_results.R")
 run("13_precision_coverage.R")       # confidence thresholds and triage
 
-# follow ups that depend on the cv predictions
+# needs the cv predictions
 run("30_variability.R")              # bootstrap sd
 run("31_category_breakdown.R")       # all 130 ccs categories
 
-# these name their output after the tracks they were given, and 18_ reads the
-# per track files back, so pass one track at a time
+# pass one track at a time
 if (!QUICK) {
   for (tr in c("10_9", "8_9")) {
     run("16_ablation.R", tr)
@@ -54,7 +48,7 @@ if (!QUICK) {
   run("29_portability.R")
 }
 
-# reporting only, no recomputation
+# reporting only
 run("20_top1_accuracy.R")
 run("21_error_by_code_type.R")
 run("22_target_block_structure.R")
@@ -67,26 +61,21 @@ run("37_unmatched_handout.R")        # standalone html of the same thing
 run("27_show_results.R")             # every headline number
 
 
-# the cutoff work and the reviewed unmatched codes. 44_review_workbook.R is not
-# run here on purpose, it rebuilds the review xlsx from scratch and would throw
-# away hand formatting. use 47_patch_notes.R to change wording in place instead.
+# 44_ skipped on purpose, use 47_
 run("41_identical_labels.R")          # proof the code prefix broke the similarity
 run("45_absolute_threshold_grid.R")   # absolute cutoff against the relative one
 run("43_e13_d48_review.R")            # per code look at 249 and 239
 
-# 50_ writes the per code rank file that 51_ reads, so it goes first. 53_ and
-# 55_ read the grid 45_ just wrote. 54_ reads results/grid/conditions/, which is
-# committed, so it works under --quick too. 54_ and 55_ reload the similarity
-# matrices to get the counts, which is most of the few minutes they take.
+# order matters: 50_ before 51_, 45_ first
 run("50_descriptive_by_code.R")       # where the correct code ranks, per code
 run("51_analysis_tables.R")           # the five trend tables
-run("52_icda8_excluded_list.R")       # the 52 with no icda-8 match, described
+run("52_icda8_excluded_list.R")       # 52 no-match codes described
 run("53_threshold_frequencies.R")     # counts behind each cutoff, not summaries
 run("54_icda8_code_in_label.R")       # code in the label on the icda-8 track
 run("55_median_similarity_gap.R")     # why sapberts median sits so much lower
-run("56_category_counts.R")           # all 130 ccs categories at the plain cutoffs
-run("57_clinicalbert_vs_sapbert.R")   # head to head, same top n and rule for both
-run("58_icda8_excluded_effect.R")     # the 52 with no icda-8 match, every cutoff x top n
-run("59_icda8_excluded_review.R")     # the 52 review workbook, reads 52_ and 58_
+run("56_category_counts.R")           # 130 ccs categories, plain cutoffs
+run("57_clinicalbert_vs_sapbert.R")   # head to head, same settings both
+run("58_icda8_excluded_effect.R")     # 52 no-match codes, full grid
+run("59_icda8_excluded_review.R")     # 52 review workbook
 
 cat("\nall done. results/ is rebuilt.\n")

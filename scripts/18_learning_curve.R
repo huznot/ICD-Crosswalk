@@ -1,15 +1,7 @@
-# how much would more training data actually buy
-#
-# the validation set is small and thats the limitation people raise most. but
-# "small" isnt actionable on its own, what matters is whether performance is
-# still climbing at the size we have. if it is, collecting more pairs is worth
-# someones time and this says roughly how many. if it flattened, more data isnt
-# the bottleneck
-#
-# holds everything else fixed and varies only the number of training codes,
-# repeated over a few random subsamples per size
-#
-# usage: Rscript 18_learning_curve.R [track]
+# 18 learning curve, f1 against number of training codes
+# says whether more validation pairs would help
+# usage: Rscript scripts/18_learning_curve.R [track]
+
 source(if (file.exists("paths.R")) "paths.R" else "scripts/paths.R")
 source("scripts/pipeline_lib.R")
 suppressMessages(library(xgboost))
@@ -116,14 +108,13 @@ write.csv(res, out_path(sprintf("learning_curve_%s.csv",
 cat("\n===== is it still climbing? =====\n")
 for (tr in unique(res$track)) {
   d <- res %>% filter(track == tr) %>% arrange(n_train)
-  # slope over the last third of the curve, per 100 extra training codes
+  # tail slope per 100 extra codes
   tail_d <- tail(d, 3)
   slope <- coef(lm(f1_mean ~ n_train, data = tail_d))[2] * 100
   cat(sprintf("\n%s: F1 %.3f at n=%d, %.3f at n=%d\n", tr,
               d$f1_mean[1], d$n_train[1], tail(d$f1_mean,1), tail(d$n_train,1)))
   cat(sprintf("  slope over the last three points: %+.4f F1 per +100 training codes\n", slope))
-  # log fit, for a rough sense of where it goes. Extrapolation beyond the
-  # observed range is a guess, not a measurement.
+  # rough log fit, extrapolation is a guess
   fit <- lm(f1_mean ~ log(n_train), data = d)
   for (n in c(500, 1000, 2000)) {
     cat(sprintf("  log-fit projection at n=%-5d: %.3f\n", n,
@@ -132,8 +123,7 @@ for (tr in unique(res$track)) {
 }
 cat("\nProjections assume the curve keeps its shape and are not measurements.\n")
 
-# the learning curve plot. reads both tracks from disk rather than `res` so the
-# plot is correct whether this ran one track or both
+# reads both tracks from disk
 suppressMessages(library(ggplot2))
 lc_files <- out_path(sprintf("learning_curve_%s.csv", c("10_9", "8_9")))
 if (all(file.exists(lc_files))) {

@@ -1,17 +1,6 @@
-# what does this method give someone who does not have everything we have
-#
-# 16_ablation.R only drops a feature group from the scoring model. the candidate
-# list still keeps anything with cooc_rank <= N, so its no_cooccurrence row is
-# not a "no co-occurrence data" number. this script drops co-occurrence from
-# retrieval as well, which is the situation of a group that has code labels but
-# no linked health records.
-#
-# three settings, same folds and same scoring model each time:
-#   full          everything we have
-#   no_cooc       code labels and chapter table only, no health records
-#   labels_only   code labels only, no health records and no chapter table
-#
-# usage: Rscript 29_portability.R [track]
+# 29 the method without co-occurrence data or the chapter table
+# full / no_cooc / labels_only, same folds and model each time
+# usage: Rscript scripts/29_portability.R [track]
 
 source(if (file.exists("paths.R")) "paths.R" else "scripts/paths.R")
 source("scripts/pipeline_lib.R")
@@ -25,8 +14,7 @@ N_INNER <- 3
 RETRIEVAL <- list(`10_9` = list(K = 10, N = 50, chapter = FALSE),
                   `8_9`  = list(K = 10, N = 10, chapter = FALSE))
 
-# use_cooc FALSE means retrieval ignores the co-occurrence list entirely, so the
-# candidates come from the embedding models alone
+# use_cooc FALSE = embeddings only
 SETTINGS <- list(
   list(name = "full",        use_cooc = TRUE,  drop = character(0)),
   list(name = "no_cooc",     use_cooc = FALSE, drop = c("cooc")),
@@ -78,7 +66,6 @@ apply_chapter_encoding <- function(df, ce) {
     mutate(chapter_rate = ifelse(is.na(chapter_rate), ce$prior, chapter_rate))
 }
 
-# the co-occurrence branch of the keep rule is dropped when use_cooc is FALSE
 apply_retrieval <- function(df, cfg, use_cooc) {
   rank_cols <- grep("^simrank_", names(df), value = TRUE)
   keep <- Reduce(`|`, lapply(rank_cols, function(c) df[[c]] <= cfg$K))
@@ -94,8 +81,7 @@ for (tr in tracks) {
   cat(sprintf("\n################ TRACK %s ################\n", tr))
   feat_all <- readRDS(out_path(sprintf("rerank_features_%s.rds", tr)))
   base <- feat_all %>% filter(has_truth == 1)
-  # truth comes from the full pool, before retrieval, so a positive that
-  # retrieval missed still counts against recall
+  # truth before retrieval, keeps recall honest
   truth <- base %>% filter(y == 1) %>% select(ICD_9_CM, target)
   codes <- sort(unique(base$ICD_9_CM))
 

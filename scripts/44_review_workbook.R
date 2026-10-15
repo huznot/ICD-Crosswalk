@@ -1,3 +1,6 @@
+# 44 builds the 9 codes review workbook from scratch
+# not in run_all.R, it wipes the hand formatting. use 47_ for wording
+
 source(if (file.exists("paths.R")) "paths.R" else "scripts/paths.R")
 suppressMessages(source("scripts/pipeline_lib.R"))
 suppressMessages({library(openxlsx); library(readxl)})

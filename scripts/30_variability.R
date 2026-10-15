@@ -1,18 +1,7 @@
-# how much do the reported numbers move if the code set had been slightly
-# different. every score is one number off 354 icd-9 codes with no
-# indication of how stable it is, so this puts a standard deviation on all of
-# them, and on every difference we compare
-#
-# method: cluster bootstrap. resample the icd-9 codes with replacement, keeping
-# all of a code's pairs together, recompute the metric, repeat B times. the sd
-# of those B values is the standard error of the reported number. codes are the
-# sampling unit because pairs from the same code are not independent
-#
-# two families of number get the same treatment
-#   f1 at the best grid point, every condition in full_grid_best.csv
-#   top-1 retrieval, is the highest scoring target a correct one
-#
-# usage: Rscript 30_variability.R
+# 30 how much the numbers move on a different set of codes
+# cluster bootstrap over icd-9 codes, cv fold spread for the reranker
+# writes bootstrap_*.csv and cv_fold_variability.csv
+
 source(if (file.exists("paths.R")) "paths.R" else "scripts/paths.R")
 source("scripts/pipeline_lib.R")
 set.seed(42)
@@ -25,7 +14,6 @@ B <- 2000
 
 gen <- function(tag) file.path(GEN_BASE, sprintf("cosine_similarity_matrices_%%s_%s.xlsx", tag))
 
-# every condition, keyed by the model name used in full_grid_best.csv
 CONDITIONS <- list(
   `ClinicalBERT-original`         = file.path(ORIG_BASE, "Cosine_Similarity_Matrices/cosine_similarity_matrices_%s_ClinicalBERT.xlsx"),
   `ClinicalBERT-base`             = gen("clinicalbert_base"),
@@ -40,8 +28,7 @@ CONDITIONS <- list(
   `mpnet-stripped`                = gen("mpnet_stripped")
 )
 
-# every difference we compare, as model against reference. the deltas are
-# computed inside each bootstrap draw so both arms see the same codes
+# deltas inside each draw, so paired
 COMPARISONS <- list(
   c("ClinicalBERT-base", "ClinicalBERT-original"),
   c("SapBERT-base", "ClinicalBERT-original"),
@@ -56,7 +43,6 @@ COMPARISONS <- list(
   c("mpnet-stripped", "mpnet-base")
 )
 
-# arms for the top-1 retrieval numbers
 TOP1_ARMS <- list(
   `ClinicalBERT, code and label` = gen("clinicalbert_base"),
   `ClinicalBERT, label only`     = gen("clinicalbert_base_nocode"),
@@ -95,8 +81,7 @@ for (tr in names(TRACKS)) {
 
 best <- read.csv(out_path("full_grid_best.csv"), stringsAsFactors = FALSE)
 
-# runs the original four step pipeline at one grid point and returns the
-# per code tp/fp/fn counts, which is everything the bootstrap needs
+# per code counts, all the bootstrap needs
 per_code_counts <- function(track_name, sheets, thr, tn, fc) {
   tk  <- TRACKS[[track_name]]
   tcn <- tk$target_col_name
@@ -123,7 +108,6 @@ metrics_from_totals <- function(tp, fp, fn) {
        accuracy = ifelse(tp + fp + fn > 0, tp / (tp + fp + fn), 0))
 }
 
-# one column per bootstrap replicate, each column a resample of the code index
 resample_matrix <- function(n_codes, B) {
   matrix(sample.int(n_codes, n_codes * B, replace = TRUE), nrow = n_codes, ncol = B)
 }
@@ -150,7 +134,7 @@ align_codes <- function(counts_list) {
   })
 }
 
-# part 1, f1 at the best grid point
+# part 1: best grid point f1
 
 var_rows   <- list()
 delta_rows <- list()
@@ -171,7 +155,7 @@ for (track_name in names(TRACKS)) {
                                                 row$flag_combination)
   }
 
-  # same codes and the same resamples for every condition so deltas are paired
+  # same resamples everywhere so deltas pair
   counts_by_model <- align_codes(counts_by_model)
   n_codes <- nrow(counts_by_model[[1]])
   idx <- resample_matrix(n_codes, B)
@@ -215,9 +199,8 @@ print(as.data.frame(variability %>% filter(metric == "f1") %>% select(-metric)))
 cat("\n=== every claimed difference in f1 ===\n")
 print(as.data.frame(deltas %>% filter(metric == "f1") %>% select(-metric)))
 
-# part 2, top-1 retrieval
+# part 2: top-1 retrieval
 
-# highest scoring target for each icd-9 code, across all sheets of a matrix
 top1_hits <- function(path, truth) {
   sheets <- load_similarity_sheets(path)
   bestsofar <- NULL
@@ -301,10 +284,9 @@ print(as.data.frame(top1_var))
 cat("\n=== effect of removing the code number on top-1 ===\n")
 print(as.data.frame(top1_delta))
 
-# part 3, the cross validated pipeline
+# part 3: the cv reranker
 
-# the reranker is evaluated by five fold cross validation, so its spread comes
-# straight from the folds rather than a bootstrap
+# spread straight from the cv folds
 folds_path <- out_path("cv_rerank_folds.csv")
 if (file.exists(folds_path)) {
   folds <- read.csv(folds_path, stringsAsFactors = FALSE)

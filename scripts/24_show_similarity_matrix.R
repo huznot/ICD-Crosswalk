@@ -1,3 +1,6 @@
+# 24 what a similarity matrix looks like, with a small heatmap
+# writes similarity_matrix_example.csv and plot_similarity_matrix_example.png
+
 source(if (file.exists("paths.R")) "paths.R" else "scripts/paths.R")
 
 suppressMessages({library(readxl); library(dplyr); library(tidyr); library(ggplot2)})
@@ -15,9 +18,7 @@ lab10 <- read_excel(LAB, sheet = "ICD-10-CA-3Level") %>%
 truth <- read_excel(VAL, sheet = "Validation_ICD9_ICD10") %>%
   transmute(icd9 = as.character(`ICD-9-CM`), target = as.character(`ICD-10-CA`))
 
-# the workbook is one sheet per block of icd-9 codes. rows are icd-10 codes,
-# columns are icd-9 codes, each cell is the cosine similarity between the two
-# label embeddings
+# sheet per icd-9 block, cells = cosine
 sheets <- excel_sheets(SIM)
 long <- bind_rows(lapply(sheets, function(s) {
   d <- read_excel(SIM, sheet = s)
@@ -29,8 +30,7 @@ cat(sprintf("matrix is %d icd-9 codes x %d icd-10 codes = %s cells\n\n",
             n_distinct(long$icd9), n_distinct(long$target),
             format(nrow(long), big.mark = ",")))
 
-# a few codes that have more than one correct answer, those are the interesting
-# ones to look at
+# multi-answer codes are the interesting ones
 multi <- truth %>% count(icd9) %>% filter(n >= 2) %>% pull(icd9)
 picks <- intersect(c("250", "410", "486", "820"), multi)
 if (length(picks) < 3) picks <- head(sort(multi), 4)
@@ -50,8 +50,7 @@ for (p in picks) {
               N_SHOW, sum(top$target %in% tr), length(tr)))
 }
 
-# heatmap of one corner. take a handful of icd-9 codes and the union of their
-# best candidates so the picture is small enough to read
+# small corner so it stays readable
 sub9  <- head(picks, 4)
 sub10 <- long %>% filter(icd9 %in% sub9) %>% group_by(icd9) %>%
   slice_max(sim, n = 6) %>% ungroup() %>% pull(target) %>% unique()

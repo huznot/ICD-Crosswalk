@@ -41,8 +41,7 @@ MODEL_IDS = {
     "mpnet": "sentence-transformers/all-mpnet-base-v2",
 }
 
-# clinicalbert/sapbert: raw transformers + CLS token. done in python rather than
-# through reticulate in r, because reticulate returned wrong numbers for this
+# reticulate gave wrong numbers, so python
 CLS_MODELS = {"clinicalbert", "sapbert"}
 
 
@@ -52,10 +51,7 @@ def load_filler_words():
 
 
 def load_stopwords(which):
-    # two variants of the snowball english list. "snowball" is the standard
-    # list unmodified. "snowball_safe" drops the single letters and no/not/nor
-    # from it, which is the only change that stops two different codes ending
-    # up with the same text. see 26_stopword_choice.R
+    # snowball_safe keeps letters/negations, labels stay distinct
     with open(HERE / "stopwords_snowball.json") as f:
         return json.load(f)[which]["words"]
 
@@ -123,7 +119,7 @@ def cosine_sim_matrix(a, b):
 
 
 def write_ccs_sheets(path, sim_df, icd9_codes, ccs_map, target_col_name):
-    # sim_df: rows = target codes (index = target code), columns = icd9 codes
+    # rows = targets, cols = icd9 codes
     with pd.ExcelWriter(path, engine="openpyxl") as writer:
         for ccs_id in sorted(ccs_map.keys()):
             cols = [c for c in ccs_map[ccs_id] if c in sim_df.columns]

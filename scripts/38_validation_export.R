@@ -1,19 +1,6 @@
-# exports the validation data as csv, with labels and chapters attached, and
-# builds a review sheet for the icd-9 codes recorded as having no match.
-#
-# two things prompted this. the validation workbook is the only place the
-# "no match" decision is recorded and it was not readable outside excel, and
-# code 338 turned out to have no reachable correct target: g89, chronic pain,
-# is not in the icd-10-ca code list at all, and r52, which carries 338's own
-# label, is chapter 18 against 338's aligned chapters 6, 7 and 8, so the
-# chapter filter removes it. that is a property of the reference data, not of
-# the algorithm, and the other 8 need the same check.
-#
-# the review sheet carries what the pipeline emits for each code next to the
-# chapters, so the manual check has the candidate list in front of it. the
-# last two columns are left blank to be filled in by hand.
-#
-# usage: Rscript 38_validation_export.R
+# 38 exports the validation data as csv with labels and chapters
+# plus a review sheet for the codes with no match
+# writes validation_pairs_*.csv and unmatched_review_*.csv
 
 source(if (file.exists("paths.R")) "paths.R" else "scripts/paths.R")
 source("scripts/pipeline_lib.R")
@@ -54,7 +41,6 @@ for (tr in names(TRACKS)) {
   cat(sprintf("\n=== %s ===\n%d target codes in the code list, %d icd-9 with a match, %d without\n",
               tk$label, nrow(tgt), n_distinct(man$`ICD-9-CM`), length(unmatched)))
 
-  # the reference crosswalk itself, one row per manually mapped pair
   pairs <- man %>%
     transmute(icd9 = as.character(`ICD-9-CM`), target = as.character(.data[[tk$manual_col]])) %>%
     left_join(icd9_lab, by = "icd9") %>%
@@ -69,12 +55,10 @@ for (tr in names(TRACKS)) {
            chapter_distance, survives_chapter_filter)
   write.csv(pairs, file.path(OUT, sprintf("validation_pairs_%s.csv", tr)), row.names = FALSE)
 
-  # a reference pair the chapter filter would reject is a mapping the pipeline
-  # cannot make however good its scores are, so it is worth counting
+  # chapter filter blocks these no matter what
   cat(sprintf("%d reference pairs, %d of them fail the chapter filter\n",
               nrow(pairs), sum(!pairs$survives_chapter_filter, na.rm = TRUE)))
 
-  # what the pipeline emits for the codes with no reference match
   cooc <- load_cooccurrence_df(file.path(ORIG, tk$cooc_file))
   res  <- tk$run(load_similarity_sheets(tk$sim_file), cooc, man, ccs %>% select(ICD_9_CM, CCS_ID), exc,
                  similarity_threshold = tk$thr, top_n = tk$top_n, flag_combination = tk$algo)
@@ -85,8 +69,7 @@ for (tr in names(TRACKS)) {
     left_join(tgt, by = "target") %>%
     arrange(icd9, desc(coalesce(similarity, 0)))
 
-  # one row per code even when nothing was emitted, so the 52 icda-8 codes with
-  # no output still appear on the sheet to be reviewed
+  # keep codes with nothing emitted
   review <- tibble(icd9 = unmatched) %>%
     left_join(icd9_lab, by = "icd9") %>%
     mutate(icd9_chapter = find_icd9cm_chapter(icd9),

@@ -1,11 +1,7 @@
-# does putting the code number in the embedding text help or hurt
-#
-# we were embedding "250 diabetes mellitus" rather than "diabetes mellitus". the
-# numbers mean nothing across coding systems, icd-9 250 and icd-10 E11 are the
-# same concept with nothing in common lexically, so they may just be noise
-#
-# compares recall ceiling of the pool at a few top-K values plus top-1 hit rate
-# on similarity alone
+# 23 does the code number in the embedding text help or hurt
+# pool recall at a few top k values plus top-1 hits
+# writes code_prefix_test.csv
+
 source(if (file.exists("paths.R")) "paths.R" else "scripts/paths.R")
 source("scripts/pipeline_lib.R")
 

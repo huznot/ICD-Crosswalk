@@ -1,13 +1,8 @@
-# full parameter grid for every embedding condition
-# comparing models at one operating point is weak, each one has a different
-# similarity distribution.
-# merge_and_flag is ~130x faster now so this runs the whole grid:
-# thresholds {0.95,0.99,0.995,0.999} x top_n {3,5,10,15,20,25,30} x flags 1:4
-#
-# usage: Rscript 07_full_grid_comparison.R              all conditions
-#        Rscript 07_full_grid_comparison.R mpnet_base   named ones only
-# each condition writes its own results/full_grid/<tag>.csv so they can run in
-# parallel, then 08_ combines them
+# 07 full grid for every embedding condition
+# thresholds x top n x rules 1-4, one csv per condition in results/grid/conditions/
+# usage: Rscript scripts/07_full_grid_comparison.R [tag ...]   (no tag = all)
+# 08_ combines the outputs
+
 source(if (file.exists("paths.R")) "paths.R" else "scripts/paths.R")
 source("scripts/pipeline_lib.R")
 
@@ -21,11 +16,9 @@ thresholds <- c(0.95, 0.99, 0.995, 0.999)
 top_ns     <- c(3, 5, 10, 15, 20, 25, 30)
 flags      <- 1:4
 
-# tags become filenames and windows is case insensitive, so two tags differing
-# only by case are the same file and parallel runs clobber each other
+# windows is case insensitive, keep tags unique
 CONDITIONS <- list(
-  # the two arms the baseline was built on. clinicalbert_original came from an
-  # external pipeline we dont have, sapbert_original is generated here
+  # clinicalbert_original is prebuilt, not regenerated
   clinicalbert_original = list(
     model = "ClinicalBERT-original", family = "ClinicalBERT", stripping = "base",
     path_10_9 = file.path(ORIG_BASE, "Cosine_Similarity_Matrices/cosine_similarity_matrices_10_9_ClinicalBERT.xlsx"),
@@ -34,17 +27,14 @@ CONDITIONS <- list(
     model = "SapBERT-base", family = "SapBERT", stripping = "base",
     path_10_9 = file.path(SAPBERT_BASE, "cosine_similarity_matrices_10_9_SapBERT.xlsx"),
     path_8_9  = file.path(SAPBERT_BASE, "cosine_similarity_matrices_8_9_SapBERT.xlsx")),
-  # regenerated arms, all from generate_embeddings.py, so base vs stripped and
-  # family vs family are controlled. sapbert_base doubles as a check that the
-  # regeneration reproduces data/sapbert
+  # all from generate_embeddings.py, so comparable
   clinicalbert_base     = list(model = "ClinicalBERT-base",     family = "ClinicalBERT", stripping = "base"),
   clinicalbert_stripped = list(model = "ClinicalBERT-stripped", family = "ClinicalBERT", stripping = "stripped"),
   sapbert_base          = list(model = "SapBERT-base-regen",    family = "SapBERT",      stripping = "base"),
   sapbert_stripped      = list(model = "SapBERT-stripped",      family = "SapBERT",      stripping = "stripped"),
   mpnet_base            = list(model = "mpnet-base",            family = "mpnet",        stripping = "base"),
   mpnet_stripped        = list(model = "mpnet-stripped",        family = "mpnet",        stripping = "stripped"),
-  # the 2x2: stopwords in or out, code number in or out of the text.
-  # clinicalbert_base is the top left cell of that square, it already exists above
+  # 2x2: stopwords in/out, code in/out
   sapbert_base_nocode = list(
     model = "SapBERT-base-nocode", family = "SapBERT", stripping = "base"),
   mpnet_base_nocode = list(
@@ -55,8 +45,7 @@ CONDITIONS <- list(
     model = "ClinicalBERT-stopwords", family = "ClinicalBERT", stripping = "stopwords"),
   clinicalbert_stopwords_nocode = list(
     model = "ClinicalBERT-stopwords-nocode", family = "ClinicalBERT", stripping = "stopwords"),
-  # the snowball list exactly as published, including single letters, for
-  # comparison against the version that keeps them
+  # snowball list as published, single letters too
   clinicalbert_stopwords_raw = list(
     model = "ClinicalBERT-stopwords-raw", family = "ClinicalBERT", stripping = "stopwords_raw")
 )
@@ -110,7 +99,7 @@ run_full_grid <- function(cond, track_name, sheets) {
   n_total <- length(thresholds) * length(top_ns) * length(flags)
   cat(sprintf("--- %s / %s (%d points) ---\n", track_name, cond$model, n_total))
 
-  # co-occurrence candidates only depend on top_n so build each once and reuse
+  # cooc only depends on top_n, build once
   cooc_by_top_n <- lapply(top_ns, function(tn)
     get_cooccurrence_codes_from_df(tk$cooc, tn, tk$icd9_col, tk$target_col, tcn))
   names(cooc_by_top_n) <- as.character(top_ns)

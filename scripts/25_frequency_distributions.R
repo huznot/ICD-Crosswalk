@@ -1,3 +1,6 @@
+# 25 how max similarity and top co-occurrence are spread
+# writes freq_dist_*.csv and two plots
+
 source(if (file.exists("paths.R")) "paths.R" else "scripts/paths.R")
 
 suppressMessages({library(readxl); library(dplyr); library(tidyr); library(ggplot2)})
@@ -57,8 +60,7 @@ for (tr in names(TRACKS)) {
   ms <- max_sim_per_code(tk$sim) %>% mutate(track = tr, track_label = tk$label)
   cat(sprintf("\nmaximum cosine similarity, %d ICD-9-CM codes\n", nrow(ms)))
   describe(ms$max_similarity, "max similarity")
-  # cosine similarity can come back a hair over 1 from floating point, which
-  # would fall outside the bins and be dropped. clamp before binning
+  # float noise can push cosine over 1
   n_perfect <- sum(ms$max_similarity >= 1 - 1e-6)
   cat(sprintf("  identical-label matches (similarity ~= 1): %d (%.1f%%)\n",
               n_perfect, 100 * n_perfect / nrow(ms)))

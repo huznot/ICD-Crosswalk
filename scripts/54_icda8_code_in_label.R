@@ -1,14 +1,10 @@
+# 54 does the code number in the label matter on icd-9 to icda-8
+# grid comparison from results/grid/conditions/, best settings rerun for counts
+# writes workbooks/2_icda8_code_in_label.xlsx
+
 source(if (file.exists("paths.R")) "paths.R" else "scripts/paths.R")
 source("scripts/pipeline_lib.R")
 suppressMessages(library(openxlsx))
-
-# does pasting the code number onto the front of the label before embedding
-# matter on the icd-9 to icda-8 track. it mattered a lot on the icd-9 to
-# icd-10-ca track, and it should matter less here
-# because both classifications are numeric so the numbers themselves look
-# alike. both arms already ran in the full grid, so the grid comparison is
-# read from results/grid/conditions/. the counts at the best setting are not in
-# those files, so those six settings per track are rerun to get tp, fp and fn.
 
 ORIG <- "data/original"
 GEN  <- "data/generated"
@@ -16,7 +12,7 @@ VAL  <- file.path(ORIG, "ICD_Codes_Files_and_Validation_Data/Validation_Data .xl
 LAB  <- file.path(ORIG, "ICD_Codes_Files_and_Validation_Data/ICD_Codes_Labels.xlsx")
 OUT  <- out_path("2_icda8_code_in_label.xlsx")
 
-# the four pairs of arms that differ only by whether the code is in the text
+# arm pairs differing only by code
 PAIRS <- list(
   list(model = "ClinicalBERT", text = "none",
        code = "clinicalbert_base", nocode = "clinicalbert_base_nocode"),
@@ -57,8 +53,7 @@ for (tr in names(TRACKS)) {
   TRACKS[[tr]]$cooc_df  <- load_cooccurrence_df(file.path(ORIG, TRACKS[[tr]]$cooc))
 }
 
-# keyed by the condition tag, which is the filename. the model column cannot be
-# used for this because sapbert_base is recorded as SapBERT-base-regen
+# key by filename, model names are inconsistent
 gfiles <- list.files("results/grid/conditions", pattern = "[.]csv$", full.names = TRUE)
 grid <- setNames(lapply(gfiles, read.csv, stringsAsFactors = FALSE),
                  sub("[.]csv$", "", basename(gfiles)))
@@ -66,9 +61,7 @@ stopifnot(all(unlist(lapply(PAIRS, `[`, c("code", "nocode"))) %in% names(grid)))
 
 KEY <- c("track", "similarity_threshold", "top_n", "flag_combination")
 
-## every grid point, the two arms side by side. 4 thresholds x 7 top_n x 4 rules
-## is 112 points per model per track, so this is a paired comparison rather than
-## a best against best, which one lucky setting could swing
+# paired per grid point, not best-vs-best
 side <- do.call(rbind, lapply(PAIRS, function(p) {
   a <- grid[[p$code]]; b <- grid[[p$nocode]]
   m <- merge(a[, c(KEY, "f1", "precision", "recall", "n_auto_mappings")],
@@ -88,7 +81,6 @@ side <- do.call(rbind, lapply(PAIRS, function(p) {
 side <- side[order(side$Track, side$Model, side$`Text cleaning`, side$`Cosine cutoff`,
                    side$`Top N co-occurring`), ]
 
-## the summary of that: how often removing the code helped, and by how much
 summ <- side %>%
   group_by(Track, Model, `Text cleaning`) %>%
   summarise(`Grid points` = n(),
@@ -105,8 +97,7 @@ summ <- summ[order(summ$Track, summ$Model, summ$`Text cleaning`), ]
 cat("\npaired across every grid point, label only minus code in the label\n")
 print(summ, row.names = FALSE)
 
-## counts at the best setting for each arm. the grid files only carry precision,
-## recall and f1, so the counts are recomputed here
+# grid files lack counts, rerun for them
 run_one <- function(track, tag, thr, tn, fl) {
   tk <- TRACKS[[track]]
   tcn <- tk$target_col_name

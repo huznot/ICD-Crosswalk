@@ -1,6 +1,6 @@
-# scripts used to assume they were started from scripts/, the newer ones
-# assumed the repo root, so half of them broke depending on where you ran them.
-# this walks up to the root once, then every path below is root relative
+# finds the repo root and picks the results/ subfolder for each output
+# every script sources this first
+
 local({
   d <- getwd()
   while (!file.exists(file.path(d, "icd_crosswalk.Rproj")) && dirname(d) != d) d <- dirname(d)
@@ -8,10 +8,7 @@ local({
   setwd(d)
 })
 
-# results/ used to be one directory with 110 files in it. it is grouped now, but
-# the grouping is worked out here from the file name instead of at every call
-# site, so scripts still pass a bare name and names built at runtime land in the
-# right place too.
+# subfolder picked from the file name
 results_subdir <- function(name) {
   n <- basename(name)
   if (grepl("^plot_", n))                                            return("figures")
@@ -19,8 +16,7 @@ results_subdir <- function(name) {
   if (grepl("^unmatched|^validation_pairs", n))                      return("unmatched")
   if (grepl("^(cv_rerank|rerank_features|base_emit|heldout_counts|precision_coverage|candidate_generation|chapter_filter)", n))
                                                                      return("rerank")
-  # the four workbooks for the icd-9 to icd-10-ca track, numbered and kept
-  # together so they are one click from the repo front page
+  # numbered workbooks for the readme
   if (grepl("^[1-4]_(threshold_frequencies|icda8_code_in_label|similarity_gap_by_model|counts_by_ccs_category)", n))
                                                                      return("workbooks")
   if (grepl("^clinicalbert_vs_sapbert", n))                          return("head_to_head")
@@ -30,8 +26,7 @@ results_subdir <- function(name) {
   "tables"
 }
 
-# out_path("x.csv") -> "results/tables/x.csv", creating the directory.
-# a name that already carries a subdirectory is left where it asks to go.
+# out_path("x.csv") -> results/tables/x.csv
 out_path <- function(...) {
   name <- file.path(...)
   name <- sub("^results[/\\]", "", name)

@@ -1,3 +1,6 @@
+# 45 absolute cosine cutoff vs the relative one, full grid
+# writes absolute_threshold_grid.csv, lots of later scripts read it
+
 source(if (file.exists("paths.R")) "paths.R" else "scripts/paths.R")
 source("scripts/pipeline_lib.R")
 

@@ -1,12 +1,6 @@
-# combines the per condition grids from 07_ into summary tables
-#   full_grid_all.csv          every point
-#   full_grid_best.csv         best per condition x track
-#   full_grid_stripping.csv    base vs stripped
-#   full_grid_family.csv       best per model family
-#   full_grid_sensitivity.csv  how much the ranking depends on the operating point
-#
-# the sensitivity table is the point, comparing models at one arbitrary operating
-# point cant tell "A is better" from "A wins at this one spot"
+# 08 combines the 07_ grids into summary tables
+# writes full_grid_*.csv and plot_f1_accuracy_comparison.png
+
 source(if (file.exists("paths.R")) "paths.R" else "scripts/paths.R")
 source("scripts/pipeline_lib.R")
 
@@ -21,8 +15,7 @@ cat(sprintf("Assembling %d condition file(s): %s\n", length(files),
 
 all_grid <- bind_rows(lapply(files, read.csv, stringsAsFactors = FALSE))
 
-# every condition must have run the same grid or best-f1 is comparing different
-# amounts of search
+# bail if conditions ran different grids
 pts <- all_grid %>% count(model, track, name = "n_points")
 if (length(unique(pts$n_points)) != 1) {
   cat("\nWARNING: conditions did not all run the same number of grid points --\n")
@@ -34,7 +27,6 @@ cat(sprintf("%d rows, %d conditions, %d points per condition x track\n",
 
 write.csv(all_grid, out_path("full_grid_all.csv"), row.names = FALSE)
 
-# best point per condition x track
 best <- all_grid %>%
   group_by(track, model) %>%
   slice_max(order_by = f1, n = 1, with_ties = FALSE) %>%
@@ -42,8 +34,7 @@ best <- all_grid %>%
   arrange(track, desc(f1))
 write.csv(best, out_path("full_grid_best.csv"), row.names = FALSE)
 
-# paired within family and track, regenerated arms only, so base and stripped
-# differ only by the stripping
+# regenerated arms only, so it's paired
 paired <- all_grid %>%
   filter(model %in% c("ClinicalBERT-base", "ClinicalBERT-stripped",
                       "SapBERT-base-regen", "SapBERT-stripped",
@@ -59,8 +50,7 @@ stripping <- paired %>%
   arrange(track, family)
 write.csv(stripping, out_path("full_grid_stripping.csv"), row.names = FALSE)
 
-# win rate at matched points. better read than best-f1 for a small effect since
-# one arm can win just by finding a luckier corner of the grid
+# win rate beats best-f1 for small effects
 paired_points <- paired %>%
   select(track, family, stripping, similarity_threshold, top_n, flag_combination, f1) %>%
   tidyr::pivot_wider(names_from = stripping, values_from = f1) %>%
@@ -74,7 +64,7 @@ paired_points <- paired %>%
             .groups = "drop")
 write.csv(paired_points, out_path("full_grid_stripping_paired.csv"), row.names = FALSE)
 
-# general purpose model (mpnet) against the medical ones
+# mpnet vs the medical models
 family_best <- all_grid %>%
   group_by(track, family) %>%
   slice_max(order_by = f1, n = 1, with_ties = FALSE) %>%
@@ -84,8 +74,7 @@ family_best <- all_grid %>%
   arrange(track, desc(f1))
 write.csv(family_best, out_path("full_grid_family.csv"), row.names = FALSE)
 
-# rank by best over grid f1 vs f1 at the single point the first comparison used. if
-# they disagree, the single point comparison was measuring the point
+# check the ranking at one fixed point
 SHARED_POINT <- list(`10_9` = list(thr = 0.995, tn = 30),
                      `8_9`  = list(thr = 0.99,  tn = 5))
 
@@ -131,15 +120,12 @@ print(as.data.frame(sensitivity %>% select(track, model, best_f1, f1_median, f1_
                                            rank_changed)))
 cat("\nDone.\n")
 
-# f1 range per model. built here rather than in 03_ so it comes from the
-# same table as full_grid_best.csv and covers all three models
+# f1 range plot
 suppressMessages(library(ggplot2))
 KEEP <- c("ClinicalBERT-original" = "ClinicalBERT",
           "SapBERT-base"          = "SapBERT",
           "mpnet-base"            = "all-mpnet-base-v2")
-# bars at the best setting alone made every model look like it has one score.
-# each is really a range over 112 settings, so plot the whole range: the dot is
-# the best, the bar is the median, the line runs down to the worst
+# show the whole range, not just best
 fig <- all_grid %>% filter(model %in% names(KEEP)) %>%
   mutate(Model = factor(unname(KEEP[model]), levels = unname(KEEP)),
          track_label = factor(ifelse(track == "10_9",

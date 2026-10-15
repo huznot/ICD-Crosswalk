@@ -1,14 +1,6 @@
-# top-1 accuracy, for context against the published gpt-4 results
-#
-# that study reports whether the single predicted code matched the reference.
-# this system predicts a set per code and is scored with precision/recall/f1 so
-# the numbers arent comparable as they stand. this computes the closest thing:
-# for each icd-9 code, is the top scoring target one of its correct ones
-#
-# read the caveats in the output before putting this next to their 84.7%,
-# direction and reference standard and code subset all differ
-#
-# uses the out of fold predictions from 12_ so it is held out
+# 20 top-1 accuracy, rough context against the gpt-4 paper (84.7%)
+# not directly comparable, read the caveats it prints
+# uses the 12_ out of fold predictions
 
 source(if (file.exists("paths.R")) "paths.R" else "scripts/paths.R")
 source("scripts/pipeline_lib.R")
@@ -24,7 +16,7 @@ for (tr in unique(preds$track)) {
     slice_max(.p_score, n = 1, with_ties = FALSE) %>% ungroup()
   acc1 <- mean(top1$y == 1)
 
-  # how often a correct target appears in the top k
+  # correct target within top k
   topk <- sapply(c(1, 3, 5), function(k) {
     d %>% group_by(ICD_9_CM) %>%
       slice_max(.p_score, n = k, with_ties = FALSE) %>%

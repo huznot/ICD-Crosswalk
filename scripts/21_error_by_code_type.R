@@ -1,5 +1,6 @@
-# breaks performance down by how many correct targets a code has, and checks
-# how much of the icda-8 task is just identity mapping
+# 21 performance by how many correct targets a code has
+# also checks how much of icda-8 is just identity mapping
+
 source(if (file.exists("paths.R")) "paths.R" else "scripts/paths.R")
 
 suppressMessages({library(readxl); library(dplyr)})

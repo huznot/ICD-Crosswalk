@@ -1,6 +1,6 @@
-# what changes when stop words are removed and when the code number is taken
-# out of the text, all with clinicalbert, everything else held fixed.
-# reads the cached grids, nothing is recomputed, takes about a second.
+# 28 stop words in/out x code number in/out, clinicalbert only
+# reads the cached grids, nothing is rerun
+# writes plot_stopwords_codes.png
 
 source(if (file.exists("paths.R")) "paths.R" else "scripts/paths.R")
 
@@ -19,7 +19,7 @@ best <- function(tag, tr) {
 }
 tname <- function(x) ifelse(x == "10_9", "ICD-9 to ICD-10-CA", "ICD-9 to ICDA-8")
 fmt <- function(v) if (is.na(v)) "  --  " else sprintf("%.3f", v)
-# a cell that has not been generated yet should say so, not print NA
+# say so instead of printing NA
 dlt <- function(a, b) if (is.na(a) || is.na(b)) "not run yet" else sprintf("%+.3f", a - b)
 
 cat("\nall four cells use clinicalbert. only the text fed to it changes.\n")
@@ -58,7 +58,6 @@ cat("\n  keeping the letters matters because 'vitamin a deficiency' and\n")
 cat("  'acute hepatitis a' lose the letter that identifies them otherwise.\n")
 cat("  see 26_stopword_choice.R for the labels this affects.\n")
 
-# bar chart of the four cells, one panel per track
 suppressMessages({library(ggplot2)})
 cells <- expand.grid(track = c("10_9", "8_9"),
                      stop = c("stop words kept", "stop words removed"),

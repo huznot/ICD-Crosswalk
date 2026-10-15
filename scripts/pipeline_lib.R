@@ -1,11 +1,13 @@
+# shared functions for the four step pipeline
+# similarity cutoff, co-occurrence, chapter filter, flag rules and scoring
+
 library(dplyr)
 library(tidyr)
 library(readxl)
 library(stringr)
 library(purrr)
 
-# low content words stripped from label text before embedding. kept in
-# filler_words.json so R and generate_embeddings.py use the same list
+# shared with generate_embeddings.py
 load_filler_words <- function(path = "filler_words.json") {
   cfg <- jsonlite::fromJSON(path)
   cfg$filler_words
@@ -13,7 +15,7 @@ load_filler_words <- function(path = "filler_words.json") {
 
 strip_filler_words <- function(text, filler_words) {
   text <- tolower(as.character(text))
-  # longest phrases first so e.g. "due to" is removed before its parts
+  # longest first, so "due to" goes whole
   words <- filler_words[order(-nchar(filler_words))]
   for (w in words) {
     pattern <- paste0("\\b", str_replace_all(w, " ", "\\\\s+"), "\\b")
@@ -98,11 +100,7 @@ chapter_alignment_10 <- list(
 
 chapter_alignment_8 <- setNames(as.list(1:17), as.character(1:17))
 
-# vectorized but still fine for length 1 input so existing scalar calls work.
-# these used to run per row under rowwise, one dplyr::filter per candidate, which
-# cost ~20-30s per grid point. both are lookups over a <=22 row table so compute
-# once per distinct code and recycle with match. output is identical to the old
-# version, this only changed the speed
+# vectorized, works for scalars too
 find_chapter <- function(code, chapter_table, pad_width = 3, alpha = FALSE) {
   code <- as.character(code)
   uniq <- unique(code)
@@ -113,7 +111,7 @@ find_chapter <- function(code, chapter_table, pad_width = 3, alpha = FALSE) {
 
   ch <- rep(NA_integer_, length(uniq))
   any_hit <- rowSums(hit) > 0
-  # ties.method "first" reproduces the old hit$chapter[1]
+  # first match wins
   ch[any_hit] <- as.integer(chapter_table$chapter[max.col(hit * 1, ties.method = "first")[any_hit]])
   ch[match(code, uniq)]
 }
@@ -128,7 +126,7 @@ compute_chapter_distance <- function(chapter_icd9cm, chapter_target, alignment) 
   a <- rep_len(as.integer(chapter_icd9cm), n)
   b <- rep_len(as.integer(chapter_target), n)
 
-  # at most 17 x 22 distinct source/target chapter pairs
+  # at most 17 x 22 pairs
   key <- paste(a, b, sep = "|")
   uniq <- unique(key)
   ua <- a[match(uniq, key)]
@@ -241,10 +239,7 @@ calc_recall    <- function(tp, fn) if ((tp + fn) != 0) tp / (tp + fn) else 0
 calc_f1        <- function(p, r) if ((p + r) != 0) 2 * p * r / (p + r) else 0
 calc_accuracy  <- function(tp, fp, fn) if ((tp + fp + fn) != 0) tp / (tp + fp + fn) else 0
 
-# icd-9 codes with no reference match used to be dropped here before tp/fp/fn
-# were counted, so the pipeline was never charged for mapping a code that has no
-# correct answer. they are kept now, which is what the crosswalk is asked to
-# handle in practice. drop_unmatched = TRUE restores the old behaviour
+# drop_unmatched = TRUE skips no-match codes
 validate_mapping <- function(manual_df, auto_df, ccs_df, valid_excluding_df,
                               manual_target_col, target_col_name,
                               drop_unmatched = FALSE) {
@@ -345,9 +340,7 @@ run_pipeline_8_9_cached <- function(sheets_dict, cooc_df, manual_df, ccs_df, val
   list(grouped = metrics$grouped, overall = metrics$overall, final_valid_df = final_valid_df, auto_df = auto_df)
 }
 
-# reverse direction, target -> icd-9-cm
-# same pipeline but normalized per target instead of per icd-9 code, with an
-# inverted chapter table. cosine is symmetric so the same sheets are reused
+# reverse direction: target -> icd-9-cm
 
 invert_alignment <- function(alignment) {
   rev <- list()
@@ -413,9 +406,7 @@ merge_and_flag_reverse <- function(similarity_df, cooccurrence_df, target_col_na
     mutate(
       chapter_icd9cm = find_icd9cm_chapter(ICD_9_CM),
       chapter_target = find_target_chapter_fn(.data[[target_col_name]]),
-      # note the swapped argument order vs. the forward direction: distance
-      # is looked up from the target chapter's allowed set, via the
-      # inverted alignment table
+      # args swapped, uses inverted chapter table
       chapter_distance = compute_chapter_distance(chapter_target, chapter_icd9cm, chapter_alignment_rev)
     ) %>%
     ungroup() %>%
@@ -500,8 +491,7 @@ run_pipeline_8_9_reverse_cached <- function(sheets_dict, cooc_df, manual_df, ccs
   list(grouped = metrics$grouped, overall = metrics$overall, final_valid_df = final_valid_df, auto_df = auto_df)
 }
 
-# round trip, does a target a code maps to map back to that same code
-# independent of the manual crosswalk
+# round trip, independent of the crosswalk
 compute_roundtrip_consistency <- function(forward_auto_df, reverse_auto_df, target_col_name) {
   fwd <- forward_auto_df %>%
     select(ICD_9_CM, !!target_col_name) %>%

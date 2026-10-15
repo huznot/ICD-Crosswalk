@@ -1,15 +1,6 @@
-# descriptive analysis of the icd-9 codes that have no reference match
-#
-# 9 icd-9-cm codes have no icd-10-ca match and 52 have no icda-8 match. this
-# describes the two signals the pipeline runs on, cosine similarity and
-# co-occurrence frequency, for those codes on their own, with the codes that do
-# have a match as a comparison group.
-#
-# nothing here changes the pipeline. it is a description of what the two
-# signals look like for these codes, which is the step before deciding whether
-# any rule could tell them apart.
-#
-# usage: Rscript 36_unmatched_descriptives.R
+# 36 cosine similarity and co-occurrence for the codes with no match
+# codes with a match are the comparison group
+# writes unmatched_*_by_code.csv, unmatched_descriptives_summary.csv and plots
 
 source(if (file.exists("paths.R")) "paths.R" else "scripts/paths.R")
 suppressMessages({library(readxl); library(dplyr); library(tidyr); library(ggplot2)})
@@ -33,9 +24,7 @@ TRACKS <- list(
                 target_labels = "ICDA-8-3Level")
 )
 
-# the label only matrices. the ICD code used to be pasted onto the front of
-# every label before embedding, which broke the similarity scores. see
-# 41_identical_labels.R for the proof
+# label only matrices, see 41_identical_labels.R
 SIM <- list(
   ClinicalBERT = list(`10_9` = file.path(GEN, "cosine_similarity_matrices_10_9_clinicalbert_base_nocode.xlsx"),
                       `8_9`  = file.path(GEN, "cosine_similarity_matrices_8_9_clinicalbert_base_nocode.xlsx")),
@@ -45,9 +34,7 @@ SIM <- list(
                       `8_9`  = file.path(GEN, "cosine_similarity_matrices_8_9_mpnet_base_nocode.xlsx"))
 )
 
-# the similarity workbook is one sheet per ccs category, all target codes as
-# rows and that category's icd-9 codes as columns. stacking every sheet gives
-# one row per icd-9 code and target pair, which is what a distribution needs
+# stack sheets into one row per pair
 long_similarity <- function(path) {
   bind_rows(lapply(excel_sheets(path), function(s) {
     d <- read_excel(path, sheet = s)
@@ -64,8 +51,7 @@ describe <- function(x) {
 
 r3 <- function(d) d %>% mutate(across(where(is.numeric), ~round(.x, 3)))
 
-# all 52 icda-8 unmatched codes are absent from the co-occurrence file, so a
-# whole group can be empty and min/max would return Inf
+# whole group can be empty, avoid Inf
 q <- function(x, p) if (all(is.na(x))) NA_real_ else unname(quantile(x, p, na.rm = TRUE))
 
 icd9_labels <- read_excel(LAB, sheet = "CCS ICD-9-CM-3Level") %>%
@@ -87,7 +73,6 @@ for (tr in names(TRACKS)) {
 
   group_of <- function(x) ifelse(x %in% unmatched, "no reference match", "has a reference match")
 
-  # cosine similarity
   for (mdl in names(SIM)) {
     L <- long_similarity(SIM[[mdl]][[tr]]) %>% mutate(group = group_of(icd9))
 
@@ -100,9 +85,7 @@ for (tr in names(TRACKS)) {
       mutate(track = tr, track_label = tk$label, model = mdl, .before = 1)
     sim_by_code[[paste(tr, mdl)]] <- per_code
 
-    # the plainest form of the separation question. a cutoff on the maximum
-    # similarity set just above the highest of the codes with no answer clears
-    # all of them, and cutoff_cost is how many codes with an answer it takes
+    # cutoff just above the no-match max
     ceiling_no_match <- max(per_code$max[per_code$group == "no reference match"])
 
     grp <- per_code %>% group_by(group) %>%
@@ -129,9 +112,7 @@ for (tr in names(TRACKS)) {
         select(icd9, mean, sd, min, q1, median, q3, max, nearest_target, nearest_target_label))),
         row.names = FALSE)
 
-      # how far the two groups overlap, against the quartiles of the codes that
-      # do have a match. icda-8 reuses the icd-9 numbering, so a code with no
-      # reference match can still have a target carrying its own number
+      # icda-8 reuses icd-9 numbers, hence overlap
       no_m  <- per_code %>% filter(group == "no reference match")
       has_m <- per_code %>% filter(group == "has a reference match")
       cat(sprintf("\n%d of the %d codes with no match reach a higher maximum than the first quartile\n",
@@ -146,10 +127,7 @@ for (tr in names(TRACKS)) {
       cat(sprintf("no match, and it also removes %d of the %d codes that have one\n",
                   sum(has_m$max <= max(no_m$max)), nrow(has_m)))
 
-      # that cutoff does not exist in the pipeline. pipeline_lib.R line 163 sets
-      # cutoff <- threshold * max_score inside each icd-9 column, so the rule is
-      # relative to the code's own best score and its top target always clears
-      # it. the weakest best score in the crosswalk is the proof
+      # pipeline cutoff is relative, see pipeline_lib
       cat(sprintf("\nthe lowest maximum over all %d codes is %.3f, and that code still produces a\n",
                   nrow(per_code), min(per_code$max)))
       cat("candidate, because the implemented rule is threshold * that code's own maximum,\n")
@@ -157,7 +135,6 @@ for (tr in names(TRACKS)) {
     }
   }
 
-  # co-occurrence
   cooc <- read_excel(file.path(ORIG, tk$cooc_file))
   names(cooc)[names(cooc) == tk$cooc_icd9]   <- "icd9"
   names(cooc)[names(cooc) == tk$cooc_target] <- "target"
@@ -182,9 +159,7 @@ for (tr in names(TRACKS)) {
               median_of_max = q(max, .5), q3_of_max = q(max, .75),
               max_of_max = q(max, 1), .groups = "drop")
 
-  # the separation question again, on the other signal. a code absent from the
-  # file has no count rather than a low one, so it cannot be cleared by a
-  # threshold and is left out of the ceiling
+  # absent from the file means no count
   no_c  <- per_cooc %>% filter(group == "no reference match", !is.na(max))
   has_c <- per_cooc %>% filter(group == "has a reference match", !is.na(max))
   if (nrow(no_c)) {
@@ -200,9 +175,7 @@ for (tr in names(TRACKS)) {
     cat(sprintf("with no match that are in the file, and it removes %d of the %d that have one\n",
                 sum(has_c$max <= max(no_c$max)), nrow(has_c)))
   }
-  # and that cutoff does not exist either. get_cooccurrence_codes_from_df keeps
-  # each code's top_n partners by rank, so the count itself is never compared
-  # against a value
+  # cooc is ranked, counts never get thresholded
   cat(sprintf("\nthe smallest highest count among the codes that are in the file is %d, and it is\n",
               min(c(no_c$max, has_c$max))))
   cat("kept, because the implemented rule takes each code's top n partners by rank\n")
@@ -241,10 +214,7 @@ write.csv(r3(group_summary), out_path("unmatched_descriptives_summary.csv"), row
 if (length(top_pairs))
   write.csv(bind_rows(top_pairs), out_path("unmatched_top_cooccurrence_pairs.csv"), row.names = FALSE)
 
-# charts
-# groups differ in size, 9 against 345 and 52 against 302, so counts on a
-# shared axis would say nothing. one point per code with a box behind it shows
-# every code and still puts the two spreads on the same scale
+# groups differ in size, plot per code
 GRP_COL <- c(`no reference match` = "#C44E52", `has a reference match` = "#8C8C8C")
 lvl <- function(d) d %>% mutate(group = factor(group, levels = names(GRP_COL)))
 
@@ -262,8 +232,7 @@ g1 <- ggplot(lvl(sim_by_code %>% filter(model == "ClinicalBERT")), aes(group, ma
         strip.text = element_text(face = "bold"))
 ggsave(out_path("plot_unmatched_similarity_max.png"), g1, width = 9.5, height = 4, dpi = 150)
 
-# the whole distribution for each code with no match, which is what was asked
-# for. the box is min to max with the quartiles inside
+# box is min to max
 spread <- sim_by_code %>% filter(model == "ClinicalBERT", group == "no reference match") %>%
   arrange(track_label, max) %>% mutate(pos = factor(row_number()))
 g2 <- ggplot(spread, aes(pos)) +
@@ -272,8 +241,7 @@ g2 <- ggplot(spread, aes(pos)) +
   geom_point(aes(y = median), colour = "white", size = 0.9) +
   geom_point(aes(y = max), colour = "#31374A", size = 1.4) +
   coord_flip() +
-  # free on both scales so each panel drops the other track's codes, the two
-  # lists overlap on five codes and a shared axis interleaves them wrongly
+  # free scales, track codes overlap
   facet_wrap(~track_label, scales = "free") +
   scale_x_discrete(labels = setNames(spread$icd9, as.character(spread$pos))) +
   labs(title = "Cosine similarity of each unmatched ICD-9-CM code against every target code",

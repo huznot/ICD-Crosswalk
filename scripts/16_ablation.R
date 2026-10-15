@@ -1,16 +1,6 @@
-# ablation, which features earn their place and whether a ranking objective
-# beats scoring candidates one at a time
-#
-# same folds and same retrieval as 12_ so the only thing that changes is the
-# thing being tested. retrieval is fixed at what 12_ picked most often rather
-# than re-searched, which keeps it clean and short
-#
-# two questions. which feature groups matter, since the mutual features and the
-# training change shipped together and couldnt be attributed. and whether
-# rank:pairwise / rank:ndcg beat binary:logistic, since the task is picking a
-# set per code and most codes have several correct targets
-#
-# usage: Rscript 16_ablation.R [track]
+# 16 ablation: which feature groups matter, ranking vs binary objectives
+# same folds and retrieval as 12_
+# usage: Rscript scripts/16_ablation.R [track]
 
 source(if (file.exists("paths.R")) "paths.R" else "scripts/paths.R")
 source("scripts/pipeline_lib.R")
@@ -46,7 +36,6 @@ emit_from_scores <- function(df, tau, rho) {
     select(ICD_9_CM, target)
 }
 
-# feature groups by name pattern
 GROUPS <- list(
   mutual  = "^simrankrev_|^simrelrev_|^ens_mean_relrev|^ens_best_rankrev|^ens_rrf_rev|^ens_mutual|^is_mutual_top1|^ens_direction_gap|^target_n_suitors|^target_rank_here|^target_is_best_here",
   lexical = "^lex_",
@@ -71,7 +60,7 @@ VARIANTS <- list(
 )
 
 train_ranker <- function(train_df, fcols, objective) {
-  # ranking objectives need rows grouped by code, contiguous, with group sizes
+  # rank objectives need contiguous code groups
   if (grepl("^rank:", objective)) {
     train_df <- train_df %>% arrange(ICD_9_CM)
     grp <- train_df %>% count(ICD_9_CM) %>% pull(n)
@@ -113,9 +102,7 @@ for (tr in tracks) {
   cat(sprintf("\n################ TRACK %s ################\n", tr))
   feat_all <- readRDS(out_path(sprintf("rerank_features_%s.rds", tr)))
   base <- feat_all %>% filter(has_truth == 1)
-  # truth comes from the FULL pool, before retrieval. Taking it after would
-  # drop the positives retrieval missed out of the recall denominator and
-  # inflate F1, which is not comparable to what 12_ reports.
+  # truth before retrieval, keeps recall honest
   truth <- base %>% filter(y == 1) %>% select(ICD_9_CM, target)
   feat <- base %>% apply_retrieval(RETRIEVAL[[tr]])
   codes <- sort(unique(feat$ICD_9_CM))
@@ -140,7 +127,7 @@ for (tr in tracks) {
       train_codes <- setdiff(codes, test_codes)
       train_full  <- feat %>% filter(ICD_9_CM %in% train_codes)
 
-      # inner cv only to pick tau/rho
+      # inner cv just picks tau/rho
       inner <- make_folds(train_codes, N_INNER)
       isc <- list()
       for (ii in seq_along(inner)) {
@@ -156,8 +143,7 @@ for (tr in tracks) {
       }
       isc <- bind_rows(isc)
       best <- list(f1 = -1, tau = 0.5, rho = 0.7)
-      # ranking objectives give unbounded scores so sweep quantiles of the score
-      # distribution rather than fixed probabilities
+      # rank scores are unbounded, sweep quantiles
       taus <- if (grepl("^rank:", v$objective))
                 unname(quantile(isc$.p_score, seq(0.5, 0.995, length.out = 19))) else
                 seq(0.05, 0.95, by = 0.05)

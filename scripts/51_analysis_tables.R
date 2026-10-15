@@ -1,3 +1,6 @@
+# 51 the five trend tables
+# reads per_code_rank.csv and absolute_threshold_grid.csv, writes trend_*.csv
+
 source(if (file.exists("paths.R")) "paths.R" else "scripts/paths.R")
 source("scripts/pipeline_lib.R")
 
@@ -18,7 +21,6 @@ MODELS <- c(ClinicalBERT = "cosine_similarity_matrices_10_9_clinicalbert_base_no
 
 out <- list()
 
-## 1.
 cat("\n\n=== 1. co-occurrence depth, at each model's best threshold ===\n")
 depth <- do.call(rbind, lapply(names(MODELS), function(m) {
   d <- res[res$model == m & res$mode == "absolute", ]
@@ -34,7 +36,6 @@ depth <- do.call(rbind, lapply(names(MODELS), function(m) {
 print(depth, row.names = FALSE)
 out$cooccurrence_depth <- depth
 
-## 2. 
 cat("\n\n=== 2. where the correct answers come from ===\n")
 src <- list()
 for (m in names(MODELS)) {
@@ -65,7 +66,6 @@ srcd <- do.call(rbind, src)
 print(srcd, row.names = FALSE)
 out$answer_source <- srcd
 
-## 3. 
 cat("\n\n=== 3. correct codes per icd-9 code, the recall ceiling ===\n")
 n <- table(as.character(man$`ICD-9-CM`))
 tg <- data.frame(`Correct codes for one ICD-9 code` = c("1", "2", "3", "4 or more"),
@@ -77,7 +77,6 @@ cat(sprintf("\n%d pairs over %d codes, median %d. emitting one correct code each
             nrow(man), length(n), median(n), length(n) / nrow(man)))
 out$targets_per_code <- tg
 
-## 4. 
 cat("\n\n=== 4. rank of the correct code ===\n")
 pc <- read.csv(out_path("per_code_rank.csv"), stringsAsFactors = FALSE)
 band <- function(r) ifelse(is.na(r), "not in column",
@@ -90,7 +89,6 @@ rk$`rank 1 share` <- sprintf("%.0f%%", 100 * t4[, "1"] / rowSums(t4))
 print(rk, row.names = FALSE)
 out$correct_rank <- rk
 
-## 5.
 cat("\n\n=== 5. top scoring code deleted by the chapter filter ===\n")
 t5 <- table(pc$model, ifelse(pc$top_survives_chapter_filter, "kept", "deleted"))
 cf <- data.frame(Model = rownames(t5), Deleted = t5[, "deleted"], Kept = t5[, "kept"],

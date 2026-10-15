@@ -1,11 +1,7 @@
-# works out where the pipeline loses points
-#
-# two stages fail differently. candidate generation decides what gets considered
-# at all and anything it drops is gone for good. selection then picks what to
-# emit and whatever it gets wrong costs precision
-#
-# measures both plus an oracle, the f1 a perfect selector would get on the
-# current pool. thats the hard ceiling for any amount of reranking
+# 09 where the original pipeline loses correct pairs
+# similarity cutoff vs co-occurrence vs flag rule, plus the oracle f1 ceiling
+# writes error_analysis_summary.csv and error_analysis_losses.csv
+
 source(if (file.exists("paths.R")) "paths.R" else "scripts/paths.R")
 source("scripts/pipeline_lib.R")
 
@@ -45,7 +41,7 @@ MODELS <- list(
                  `8_9`  = file.path(GEN_BASE, "cosine_similarity_matrices_8_9_mpnet_base.xlsx"))
 )
 
-# true pairs, after the same exclusion list the scorer uses
+# same exclusions as the scorer
 true_pairs <- function(tk) {
   excluded <- as.character(tk$excl$`ICD-9-CM`)
   tk$manual %>%
@@ -77,15 +73,14 @@ for (tr in names(TRACKS)) {
     b <- tk$best
     sheets <- load_similarity_sheets(MODELS[[mdl]][[tr]])
 
-    # stage 1: raw signals, before any filtering
+    # stage 1: raw signals
     sim_raw <- get_similarity_scores_from_sheets(sheets, b$thr, tcn) %>%
       transmute(ICD_9_CM = as.character(ICD_9_CM), target = as.character(.data[[tcn]]), Similarity)
     cooc_raw <- get_cooccurrence_codes_from_df(tk$cooc, b$tn, tk$icd9_col, tk$target_col, tcn) %>%
       transmute(ICD_9_CM = as.character(ICD_9_CM), target = as.character(.data[[tcn]]),
                 Co_Occurrence_Frequency)
 
-    # everything the matrix could offer, unthresholded. separates "threshold cut
-    # it" from "embedding never had it"
+    # threshold cut it vs never there
     universe <- get_similarity_scores_from_sheets(sheets, 0, tcn) %>%
       transmute(ICD_9_CM = as.character(ICD_9_CM), target = as.character(.data[[tcn]])) %>%
       distinct()
@@ -97,7 +92,7 @@ for (tr in names(TRACKS)) {
       tcn, tk$find_fn, tk$align)
     pool_pairs <- pool %>% transmute(ICD_9_CM, target = .data[[tcn]]) %>% distinct()
 
-    # stage 3: what the flag rule actually emits
+    # stage 3: what the rule emits
     emitted <- select_rows_by_flags(pool, b$flag) %>%
       transmute(ICD_9_CM, target = .data[[tcn]]) %>% distinct()
 
@@ -107,9 +102,9 @@ for (tr in names(TRACKS)) {
     in_sim      <- semi_join(tp_df, sim_raw %>% select(ICD_9_CM, target), by = c("ICD_9_CM", "target"))
     in_cooc     <- semi_join(tp_df, cooc_raw %>% select(ICD_9_CM, target), by = c("ICD_9_CM", "target"))
 
-    # oracle, perfect selection out of the pool
+    # oracle: perfect pick from the pool
     oracle <- f1_of(tp = nrow(in_pool), fp = 0, fn = nrow(tp_df) - nrow(in_pool))
-    # actual, recomputed here as a cross check on the main pipeline
+    # cross check against the main pipeline
     tp_n <- nrow(in_emitted)
     actual <- f1_of(tp = tp_n, fp = nrow(emitted) - tp_n, fn = nrow(tp_df) - tp_n)
 
@@ -140,7 +135,7 @@ for (tr in names(TRACKS)) {
       actual_f1 = round(actual$f1, 3), oracle_f1 = round(oracle$f1, 3),
       headroom_f1 = round(oracle$f1 - actual$f1, 3))
 
-    # where did the LOST true pairs die?
+    # where the lost pairs dropped out
     lost <- anti_join(tp_df, pool_pairs, by = c("ICD_9_CM", "target"))
     lost_diag <- lost %>%
       left_join(universe %>% mutate(in_universe = TRUE), by = c("ICD_9_CM", "target")) %>%

@@ -1,3 +1,6 @@
+# 26 which stopword list to use when cleaning labels
+# prints what each list deletes and which labels it breaks
+
 source(if (file.exists("paths.R")) "paths.R" else "scripts/paths.R")
 
 suppressMessages({library(readxl); library(dplyr); library(stopwords)})
@@ -19,7 +22,6 @@ strip_words <- function(x, w) {
          function(t) paste(t[!(t %in% w)], collapse = " "), character(1))
 }
 
-# read the labels once, everything below reuses this
 cat("reading labels...\n")
 DATA <- lapply(SHEETS, function(p) {
   d <- read_excel(LABELS, sheet = p[1])
@@ -31,7 +33,7 @@ LISTS <- list(
   nltk            = stopwords("en", source = "nltk"),
   smart           = stopwords("en", source = "smart"),
   `stopwords-iso` = stopwords("en", source = "stopwords-iso"))
-# snowball, but keeping single characters and negations
+# snowball minus single letters and negations
 LISTS[["snowball, keep letters + not"]] <-
   setdiff(LISTS$snowball, c(letters, "no", "not", "nor"))
 

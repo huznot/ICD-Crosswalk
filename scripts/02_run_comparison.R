@@ -1,3 +1,6 @@
+# 02 first clinicalbert vs sapbert comparison, original matrices
+# writes grid_results_*.csv, best_by_model.csv, ccs_breakdown_*.csv
+
 source(if (file.exists("paths.R")) "paths.R" else "scripts/paths.R")
 source("scripts/pipeline_lib.R")
 
@@ -7,10 +10,7 @@ OUT_DIR      <- "results"
 dir.create(OUT_DIR, showWarnings = FALSE, recursive = TRUE)
 
 thresholds  <- c(0.95, 0.99, 0.995, 0.999)
-# both tracks sweep top-n {3,5,10,15,20,25,30}. the original {3,5,10,15} was too
-# narrow and cut off the real optimum on icd-9 -> icd-10-ca which sits at
-# top_n=30 for both models, thats why the reference numbers looked
-# unreproducible. they reproduce exactly with this range
+# 10_9 optimum sits at top 30
 top_ns_8_9  <- c(3, 5, 10, 15, 20, 25, 30)
 top_ns_10_9 <- c(3, 5, 10, 15, 20, 25, 30)
 flags       <- 1:4
