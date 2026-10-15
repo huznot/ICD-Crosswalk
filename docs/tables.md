@@ -1,7 +1,6 @@
 # tables
 
-every file in results/, what it is, and the script in scripts/ that writes it.
-the workbooks come first.
+glossary for everything in results/
 
 ## workbooks
 
@@ -93,4 +92,4 @@ the codes with no reference match.
 
 each plot is named after the table it comes from, and made by the same script.
 categories/ has the ccs category charts, unmatched/ has the no-match code
-charts, everything else sits at the top. logos.png is just for the readme.
+charts, everything else sits at the top.
