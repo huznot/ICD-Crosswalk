@@ -2,43 +2,32 @@ source(if (file.exists("paths.R")) "paths.R" else "scripts/paths.R")
 source("scripts/pipeline_lib.R")
 suppressMessages({library(openxlsx); library(readxl)})
 
-# the icd-9-cm codes the validation data has no icda-8 match for, checked
-# against the 858 three character icda-8 codes in ICD_Codes_Labels.xlsx.
-# six are marked wrong, where the icda-8 code is unambiguous and there is no
-# competing candidate in the surrounding range. everything else is left as
-# validation data correct. a plausible candidate is not a confirmed mapping and
-# icd-8 inclusion notes are not in the repo, so the rest is not second guessed.
+# the 52 icd-9-cm codes with no icda-8 match in the validation data
 
 ORIG <- "data/original"
 VAL  <- file.path(ORIG, "ICD_Codes_Files_and_Validation_Data/Validation_Data .xlsx")
 LAB  <- file.path(ORIG, "ICD_Codes_Files_and_Validation_Data/ICD_Codes_Labels.xlsx")
 OUT  <- out_path("52_codes_no_icda8.xlsx")
 
-W <- "validation data wrong"; C <- "validation data correct"
-
-# only the six where the icda-8 code is unambiguous are marked wrong. every
-# other code is left as validation data correct, because a plausible candidate
-# is not the same as a confirmed mapping and guessing would be worse than
-# leaving the validation alone.
 chk <- list(
-  c("165", W, "163", "ICD-8 stops at 163 other and unspecified respiratory organs, there is no other home for ill-defined respiratory and intrathoracic sites"),
-  c("175", W, "174", "ICD-8 did not split breast cancer by sex. 174 malignant neoplasm of breast is the only breast code and it covers both"),
-  c("179", W, "182", "ICD-8 uterus is 180 cervix, 181 chorionepithelioma, 182 other. Part unspecified has only one home, 182"),
-  c("555", W, "563", "563 chronic enteritis and ulcerative colitis is the only chronic inflammatory bowel code in ICD-8, regional enteritis sits there"),
-  c("576", W, "576", "576 other diseases of gallbladder and biliary ducts is the same thing under the same number"),
-  c("745", W, "746", "746 congenital anomalies of heart is the only heart code. Note ICD-8 745 is ear face and neck, the numbers do not line up between the two classifications"),
-  c("176", C, "", "no Kaposi sarcoma code in ICD-8, it entered ICD-9-CM later"),
-  c("230", C, "", "ICD-8 230 to 239 is neoplasm of unspecified nature. There is no carcinoma in situ block in ICD-8"),
-  c("231", C, "", "no carcinoma in situ block in ICD-8"),
-  c("233", C, "", "no carcinoma in situ block in ICD-8"),
-  c("234", C, "", "no carcinoma in situ block in ICD-8"),
-  c("249", C, "", "ICD-8 has only 250 diabetes mellitus. Secondary diabetes is a later ICD-9-CM concept"),
-  c("305", C, "", "ICD-8 has 304 drug dependence only. Nondependent abuse is a later concept"),
-  c("315", C, "", "ICD-8 315 is unspecified mental retardation, a different concept"),
-  c("327", C, "", "no sleep disorder code in ICD-8, organic sleep disorders entered ICD-9-CM in 2005"),
-  c("338", C, "", "no pain NEC code in ICD-8, it entered ICD-9-CM in 2006"),
-  c("495", C, "", "extrinsic allergic alveolitis has no ICD-8 code"),
-  c("496", C, "", "chronic airway obstruction NEC is an ICD-9 concept")
+  c("165", "no ICDA-8 match"),
+  c("175", "no ICDA-8 match"),
+  c("179", "no ICDA-8 match"),
+  c("555", "no ICDA-8 match"),
+  c("576", "no ICDA-8 match"),
+  c("745", "no ICDA-8 match"),
+  c("176", "no Kaposi sarcoma code in ICD-8, it entered ICD-9-CM later"),
+  c("230", "ICD-8 230 to 239 is neoplasm of unspecified nature. There is no carcinoma in situ block in ICD-8"),
+  c("231", "no carcinoma in situ block in ICD-8"),
+  c("233", "no carcinoma in situ block in ICD-8"),
+  c("234", "no carcinoma in situ block in ICD-8"),
+  c("249", "ICD-8 has only 250 diabetes mellitus. Secondary diabetes is a later ICD-9-CM concept"),
+  c("305", "ICD-8 has 304 drug dependence only. Nondependent abuse is a later concept"),
+  c("315", "ICD-8 315 is unspecified mental retardation, a different concept"),
+  c("327", "no sleep disorder code in ICD-8, organic sleep disorders entered ICD-9-CM in 2005"),
+  c("338", "no pain NEC code in ICD-8, it entered ICD-9-CM in 2006"),
+  c("495", "extrinsic allergic alveolitis has no ICD-8 code"),
+  c("496", "chronic airway obstruction NEC is an ICD-9 concept")
 )
 
 excl <- read_excel(VAL, sheet = "Validation_ICD9_ICD8_Excld")
@@ -47,16 +36,13 @@ a8   <- read_excel(LAB, sheet = "ICDA-8-3Level")
 a8lab <- setNames(as.character(a8$ICDA_8_LABEL), as.character(a8$ICDA_8))
 
 m <- as.data.frame(do.call(rbind, chk), stringsAsFactors = FALSE)
-names(m) <- c("code", "verdict", "cand", "note")
+names(m) <- c("code", "note")
 
 d <- data.frame(`ICD-9-CM` = as.character(excl$`ICD-9-CM`), check.names = FALSE,
                 stringsAsFactors = FALSE)
 i <- match(d$`ICD-9-CM`, as.character(lab$ICD_9_CM))
 d$`ICD-9-CM label` <- as.character(lab$ICD_9_CM_LABEL)[i]
 j <- match(d$`ICD-9-CM`, m$code)
-d$`Validation correct?`   <- ifelse(is.na(j), C, m$verdict[j])
-d$`Closest ICDA-8 code`   <- ifelse(is.na(j) | !nzchar(m$cand[j]), "none",
-                                    paste(m$cand[j], a8lab[m$cand[j]]))
 d$Notes <- ifelse(is.na(j), "", m$note[j])
 d <- d[order(as.numeric(d$`ICD-9-CM`)), ]
 
@@ -92,8 +78,8 @@ d$`2nd co-occurring ICDA-8`   <- t3[, 2]
 d$`3rd co-occurring ICDA-8`   <- t3[, 3]
 d$`Co-occurrence rows` <- vapply(d$`ICD-9-CM`, function(k) sum(co$ICD_9_CM_Code == k), integer(1))
 
-d <- d[, c("ICD-9-CM", "ICD-9-CM label", "ICD-9 chapter", "Validation correct?",
-           "Closest ICDA-8 code", "Top co-occurring ICDA-8", "2nd co-occurring ICDA-8",
+d <- d[, c("ICD-9-CM", "ICD-9-CM label", "ICD-9 chapter",
+           "Top co-occurring ICDA-8", "2nd co-occurring ICDA-8",
            "3rd co-occurring ICDA-8", "Co-occurrence rows", "Notes")]
 
 wb <- createWorkbook()
@@ -101,7 +87,7 @@ addWorksheet(wb, "no ICDA-8 match")
 writeData(wb, 1, d, headerStyle = createStyle(textDecoration = "bold", valign = "bottom"))
 addStyle(wb, 1, createStyle(valign = "top", wrapText = TRUE),
          rows = 2:(nrow(d) + 1), cols = 1:ncol(d), gridExpand = TRUE, stack = TRUE)
-setColWidths(wb, 1, cols = 1:10, widths = c(10, 40, 30, 22, 40, 46, 46, 46, 12, 60))
+setColWidths(wb, 1, cols = 1:8, widths = c(10, 40, 30, 46, 46, 46, 12, 60))
 freezePane(wb, 1, firstActiveRow = 2)
 
 addWorksheet(wb, "chapters")
@@ -143,7 +129,6 @@ saveWorkbook(wb, OUT, overwrite = TRUE)
 cat("wrote", OUT, "\n\n")
 print(cov, row.names = FALSE)
 cat("\n")
-print(table(d$`Validation correct?`))
-cat("\nby chapter:\n"); print(ch, row.names = FALSE)
+cat("by chapter:\n"); print(ch, row.names = FALSE)
 cat("\ncodes with no co-occurrence data at all:",
     sum(d$`Co-occurrence rows` == 0), "\n")

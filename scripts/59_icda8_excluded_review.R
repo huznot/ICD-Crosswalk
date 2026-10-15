@@ -2,17 +2,8 @@ source(if (file.exists("paths.R")) "paths.R" else "scripts/paths.R")
 source("scripts/pipeline_lib.R")
 suppressMessages(library(openxlsx))
 
-# the review of the 52 icd-9 codes with no icda-8 match, laid out the way the
-# nine codes on the icd-9 to icd-10-ca track were done: the ones that look
-# wrong first, then every code described, then the chapters, then the signals.
-#
-# the validation data is taken as correct unless something unambiguous turns
-# up, so only six are marked wrong and the reasoning travels with each one.
-# the accuracy effect is the last tab, every cutoff crossed with every top n.
-#
-# reads: 52_codes_no_icda8.xlsx      (52_icda8_excluded_list.R, the verdicts)
-#        unmatched_*_by_code.csv     (36_unmatched_descriptives.R, the signals)
-#        52_codes_accuracy_effect.csv (58_icda8_excluded_effect.R)
+# review workbook for the 52 icd-9 codes with no icda-8 match.
+# reads 52_codes_no_icda8.xlsx (52_) and 52_codes_accuracy_effect.csv (58_)
 
 ORIG <- "data/original"
 GEN  <- "data/generated"
@@ -29,116 +20,55 @@ stopifnot(nrow(base) == 52)
 a8    <- read_excel(LAB, sheet = "ICDA-8-3Level")
 a8lab <- setNames(as.character(a8$ICDA_8_LABEL), as.character(a8$ICDA_8))
 
-# "163 other and unspecified respiratory organs" -> "163"
-base$proposed <- ifelse(base$`Closest ICDA-8 code` == "none", NA_character_,
-                        sub(" .*$", "", base$`Closest ICDA-8 code`))
-
-# each of the six checked against the 858 three character icda-8 codes in
-# ICD_Codes_Labels.xlsx.
-# BLOCK is the surrounding icda-8 range, printed from the file so the check is
-# visible rather than asserted
-JUST <- c(
-  "165" = "ICDA-8 has no 165. Its respiratory block stops at 163, other and unspecified respiratory organs, which is where an ill-defined respiratory site goes.",
-  "175" = "ICDA-8 has no 175. Breast cancer is one code in ICDA-8, 174, not split by sex.",
-  "179" = "ICDA-8 has no 179. The uterus is split into 180 cervix, 181 chorionepithelioma and 182 other, so part unspecified goes to 182.",
-  "555" = "ICDA-8 has no 555. Regional enteritis is a chronic enteritis, and 563 is the chronic one. 561 is the only other option and it does not mention chronic disease.",
-  "576" = "Same number in both, and the same thing: ICD-9 576 other disorders of biliary tract, ICDA-8 576 other diseases of gallbladder and biliary ducts.",
-  "745" = "ICD-9 745 is a heart defect and 746 is the only heart code in ICDA-8. ICDA-8 745 also exists but it is ear, face and neck, so the numbers do not line up between the two systems.")
-BLOCK <- list("165" = 160:163, "175" = 172:174, "179" = 180:183,
-              "555" = 560:565, "576" = 574:577, "745" = 743:747)
-block_text <- function(k) {
-  r <- as.character(BLOCK[[k]])
-  r <- r[r %in% names(a8lab)]
-  paste(sprintf("%s %s", r, a8lab[r]), collapse = "; ")
-}
-
-## what each model actually scores for these codes. for the six with a proposed
-## match this says whether the label similarity could ever have found it, which
-## is the "why is the correct code missing" column from the nine code review
-top_by_model <- list(); rank_by_model <- list()
+# top cosine match for each code, per model
+top_by_model <- list()
 for (m in names(MODELS)) {
   sheets <- load_similarity_sheets(file.path(GEN, MODELS[[m]]))
-  cols <- lapply(sheets, function(df) names(df))
-  tops <- character(nrow(base)); rks <- character(nrow(base))
+  cols <- lapply(sheets, names)
+  tops <- character(nrow(base))
   for (i in seq_len(nrow(base))) {
     k <- base$`ICD-9-CM`[i]
     sh <- which(vapply(cols, function(cn) k %in% cn, logical(1)))
-    if (!length(sh)) { tops[i] <- "not in the matrix"; rks[i] <- ""; next }
+    if (!length(sh)) { tops[i] <- "not in the matrix"; next }
     df <- sheets[[sh[1]]]
     d <- data.frame(t = as.character(df[[names(df)[1]]]), s = df[[k]], stringsAsFactors = FALSE)
     d <- d[!is.na(d$s), ]; d <- d[order(-d$s), ]
     tops[i] <- sprintf("%s %s (%.3f)", d$t[1], a8lab[d$t[1]], d$s[1])
-    p <- base$proposed[i]
-    rks[i] <- if (is.na(p)) "" else {
-      r <- match(p, d$t)
-      if (is.na(r)) "not scored" else sprintf("#%d of %d (%.3f)", r, nrow(d), d$s[r])
-    }
   }
-  top_by_model[[m]] <- tops; rank_by_model[[m]] <- rks
+  top_by_model[[m]] <- tops
   cat("read", m, "\n")
 }
 
-base$`ClinicalBERT top cosine`   <- top_by_model$ClinicalBERT
-base$`SapBERT top cosine`        <- top_by_model$SapBERT
-base$`Rank of proposed, ClinicalBERT` <- rank_by_model$ClinicalBERT
-base$`Rank of proposed, SapBERT`      <- rank_by_model$SapBERT
-base$`In the co-occurrence data` <- ifelse(base$`Co-occurrence rows` > 0, "yes", "no")
-
-wrong <- base[base$`Validation correct?` == "validation data wrong", ]
-right <- base[base$`Validation correct?` != "validation data wrong", ]
-stopifnot(nrow(wrong) == 6, nrow(right) == 46)
-
-## tab 1. the six that look wrong
-six <- data.frame(
-  `ICD-9-CM` = wrong$`ICD-9-CM`,
-  `ICD-9-CM label` = wrong$`ICD-9-CM label`,
-  `ICD-9 chapter` = wrong$`ICD-9 chapter`,
-  `Proposed ICDA-8` = wrong$proposed,
-  `ICDA-8 label` = unname(a8lab[wrong$proposed]),
-  Justification = unname(JUST[wrong$`ICD-9-CM`]),
-  `ICDA-8 codes in that block` = vapply(wrong$`ICD-9-CM`, block_text, character(1)),
-  `ClinicalBERT top cosine` = wrong$`ClinicalBERT top cosine`,
-  `Rank of proposed, ClinicalBERT` = wrong$`Rank of proposed, ClinicalBERT`,
-  `SapBERT top cosine` = wrong$`SapBERT top cosine`,
-  `Rank of proposed, SapBERT` = wrong$`Rank of proposed, SapBERT`,
-  `In the co-occurrence data` = wrong$`In the co-occurrence data`,
+all52 <- data.frame(
+  `ICD-9-CM` = base$`ICD-9-CM`,
+  `ICD-9-CM label` = base$`ICD-9-CM label`,
+  `ICD-9 chapter` = base$`ICD-9 chapter`,
+  `ClinicalBERT top cosine` = top_by_model$ClinicalBERT,
+  `SapBERT top cosine` = top_by_model$SapBERT,
+  `In the co-occurrence data` = ifelse(base$`Co-occurrence rows` > 0, "yes", "no"),
+  `Top co-occurring ICDA-8` = base$`Top co-occurring ICDA-8`,
+  Notes = ifelse(is.na(base$Notes), "", base$Notes),
   check.names = FALSE)
-six <- six[order(as.numeric(six$`ICD-9-CM`)), ]
+all52 <- all52[order(as.numeric(all52$`ICD-9-CM`)), ]
 
-## tab 2. the other 46, left as the validation data has them
-rest <- data.frame(
-  `ICD-9-CM` = right$`ICD-9-CM`,
-  `ICD-9-CM label` = right$`ICD-9-CM label`,
-  `ICD-9 chapter` = right$`ICD-9 chapter`,
-  `ClinicalBERT top cosine` = right$`ClinicalBERT top cosine`,
-  `SapBERT top cosine` = right$`SapBERT top cosine`,
-  `In the co-occurrence data` = right$`In the co-occurrence data`,
-  `Top co-occurring ICDA-8` = right$`Top co-occurring ICDA-8`,
-  check.names = FALSE)
-rest <- rest[order(as.numeric(rest$`ICD-9-CM`)), ]
-
-## tab 3. which chapters the 52 come from
 ch <- as.data.frame(table(base$`ICD-9 chapter`), stringsAsFactors = FALSE)
 names(ch) <- c("ICD-9 chapter", "Codes with no ICDA-8 match")
-ch$`Of which look wrong` <- vapply(ch$`ICD-9 chapter`,
-  function(x) sum(wrong$`ICD-9 chapter` == x), integer(1))
 ch$Share <- sprintf("%.0f%%", 100 * ch$`Codes with no ICDA-8 match` / nrow(base))
 ch <- ch[order(-ch$`Codes with no ICDA-8 match`), ]
 
-## tab 4. the accuracy effect, one row per setting
 eff <- read.csv(out_path("52_codes_accuracy_effect.csv"), stringsAsFactors = FALSE,
                 check.names = FALSE)
-names(eff) <- gsub("\\.", " ", names(eff))
 
-cat(sprintf("\n%d codes reviewed, %d look wrong, %d left as the validation data has them\n",
-            nrow(base), nrow(wrong), nrow(right)))
-cat("in the co-occurrence data:", sum(base$`In the co-occurrence data` == "yes"), "of 52\n\n")
-print(six[, c("ICD-9-CM", "Proposed ICDA-8", "Rank of proposed, SapBERT")], row.names = FALSE)
-
-hdr <- createStyle(textDecoration = "bold", valign = "bottom", fgFill = "#D9D9D9",
-                   border = "bottom", borderStyle = "medium", wrapText = TRUE)
+hdr  <- createStyle(textDecoration = "bold", valign = "bottom", fgFill = "#D9D9D9",
+                    border = "bottom", borderStyle = "medium", wrapText = TRUE)
 body <- createStyle(valign = "top", wrapText = TRUE)
-CB <- createStyle(fgFill = "#EAF1FB"); SB <- createStyle(fgFill = "#FDF1E4")
+CB   <- createStyle(fgFill = "#EAF1FB")
+SB   <- createStyle(fgFill = "#FDF1E4")
+SEP  <- createStyle(border = "top", borderColour = "#808080", borderStyle = "thin")
+BOLD <- createStyle(textDecoration = "bold")
+GOOD_HIGH <- c("#F8696B", "#FFEB84", "#63BE7B")
+GOOD_LOW  <- rev(GOOD_HIGH)
+
 wb <- createWorkbook()
 add <- function(name, df, widths, filter = FALSE, freeze_col = 1, wrap = TRUE) {
   addWorksheet(wb, name)
@@ -147,24 +77,32 @@ add <- function(name, df, widths, filter = FALSE, freeze_col = 1, wrap = TRUE) {
   freezePane(wb, name, firstActiveRow = 2, firstActiveCol = freeze_col)
   if (wrap) addStyle(wb, name, body, rows = 2:(nrow(df) + 1), cols = seq_along(widths),
                      gridExpand = TRUE, stack = TRUE)
-  if ("Model" %in% names(df))
-    for (p in list(list("ClinicalBERT", CB), list("SapBERT", SB))) {
-      r <- which(df$Model == p[[1]]) + 1
-      if (length(r)) addStyle(wb, name, p[[2]], rows = r, cols = seq_along(widths),
-                              gridExpand = TRUE, stack = TRUE)
-    }
 }
-add("the six that look wrong", six,
-    c(10, 34, 28, 11, 38, 70, 70, 34, 17, 34, 17, 12), freeze_col = 2)
-add("the other 46", rest, c(10, 34, 28, 34, 34, 12, 40), filter = TRUE, freeze_col = 2)
-add("by chapter", ch, c(42, 16, 13, 8))
-add("accuracy effect", eff,
-    c(14, 8, 30, 12, 12, 12, 11, 15, 12, 10, 10, 10, 10, 10, 10, 10, 9, 13, 13, 13, 12, 12, 12),
+
+add("all 52", all52, c(10, 34, 28, 40, 40, 12, 40, 50), filter = TRUE, freeze_col = 2)
+add("by chapter", ch, c(42, 16, 8))
+
+tab <- "accuracy effect"
+add(tab, eff, c(14, 8, 30, 11, 11, 11, 11, 12, 12, 10, 10, 10, 10, 10, 10, 10),
     filter = TRUE, freeze_col = 6, wrap = FALSE)
-# the best setting for each model and rule in bold, so the rows the old summary
-# showed are still easy to find
-b <- which(eff$`Best for this model and rule` == "yes") + 1
-addStyle(wb, "accuracy effect", createStyle(textDecoration = "bold"), rows = b,
+n <- nrow(eff)
+for (p in list(list("ClinicalBERT", CB), list("SapBERT", SB))) {
+  r <- which(eff$Model == p[[1]]) + 1
+  addStyle(wb, tab, p[[2]], rows = r, cols = seq_along(eff), gridExpand = TRUE, stack = TRUE)
+}
+# line between each model and rule block
+blk <- paste(eff$Model, eff$`Rule number`)
+brk <- which(c(FALSE, blk[-1] != blk[-n])) + 1
+addStyle(wb, tab, SEP, rows = brk, cols = seq_along(eff), gridExpand = TRUE, stack = TRUE)
+addStyle(wb, tab, BOLD, rows = which(eff$`Best for this model and rule` == "yes") + 1,
          cols = seq_along(eff), gridExpand = TRUE, stack = TRUE)
+
+shade <- function(cn, colours) {
+  conditionalFormatting(wb, tab, cols = which(names(eff) == cn), rows = 2:(n + 1),
+                        type = "colourScale", style = colours)
+}
+for (cn in c("True positives", "Precision", "Recall", "F1", "Accuracy")) shade(cn, GOOD_HIGH)
+for (cn in c("False positives", "False negatives", "Mappings for the 52 codes")) shade(cn, GOOD_LOW)
+
 saveWorkbook(wb, OUT, overwrite = TRUE)
-cat("\nwrote", OUT, "\n")
+cat("wrote", OUT, "\n")

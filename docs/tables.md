@@ -1,7 +1,7 @@
 # tables
 
 every file in results/, what it is, and the script in scripts/ that writes it.
-the workbooks come first since those are the ones that went to dr lix.
+the workbooks come first.
 
 ## workbooks
 
@@ -12,8 +12,8 @@ the workbooks come first since those are the ones that went to dr lix.
 | workbooks/2_icda8_code_in_label.xlsx | code number in the label or not, on the icda-8 track | 54 |
 | workbooks/3_similarity_gap_by_model.xlsx | similarity of correct pairs against everything else, per model | 55 |
 | workbooks/4_counts_by_ccs_category.xlsx | counts for all 130 ccs categories at the plain cutoffs | 56 |
-| review/52_codes_review.xlsx | the 52 icd-9 codes with no icda-8 match. the six that look wrong, the other 46, chapters, and every cutoff crossed with every top n | 59 |
-| review/52_codes_no_icda8.xlsx | first pass at the same 52, 59 reads its verdicts | 52 |
+| review/52_codes_review.xlsx | the 52 icd-9 codes with no icda-8 match, by chapter, and scores at every cutoff crossed with every top n | 59 |
+| review/52_codes_no_icda8.xlsx | the same 52 with their co-occurrence, 59 reads it | 52 |
 | review/9_codes_review_UPDATED.xlsx | the 9 icd-9 codes with no icd-10-ca match | 44, notes fixed by 47 |
 | review/e13_d48_review.xlsx | per code look at 249 and 239 | 43 |
 
