@@ -53,7 +53,7 @@ Rscript run_all.R --quick           # ~10 minutes, skips the parameter searches
 ```
 
 r packages: `dplyr`, `tidyr`, `readxl`, `stringr`, `purrr`, `ggplot2`,
-`jsonlite`, `xgboost`, `stopwords`, `openxlsx`.
+`xgboost`, `stopwords`, `openxlsx`.
 
 python is only needed to rebuild the embeddings:
 

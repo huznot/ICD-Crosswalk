@@ -98,4 +98,4 @@ print(cf, row.names = FALSE)
 out$chapter_filter <- cf
 
 for (nm in names(out)) write.csv(out[[nm]], out_path(paste0("trend_", nm, ".csv")), row.names = FALSE)
-cat("\nwrote", length(out), "tables to results/tables/\n")
+cat("\nwrote", length(out), "tables to results/tables/descriptive/\n")

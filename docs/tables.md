@@ -41,26 +41,28 @@ it is not in run_all.R. change wording with 47 instead.
 
 ## tables
 
+split into folders by topic.
+
 | file | what it is | script |
 |---|---|---|
-| grid_results_10_9.csv, grid_results_8_9.csv, best_by_model.csv | the first clinicalbert against sapbert comparison | 02 |
-| ccs_breakdown_10_9.csv, ccs_breakdown_8_9.csv | that comparison by ccs category | 02 |
-| regression_summary.csv | categories where sapbert did better or worse | 03 |
-| bidirectional_roundtrip.csv | mapping backwards, and whether a mapping comes back to where it started | 05 |
-| error_analysis_summary.csv, error_analysis_losses.csv | where correct pairs get lost in the pipeline | 09 |
-| ablation_10_9.csv, ablation_8_9.csv | which feature groups the reranker needs | 16 |
-| retrieval_sensitivity_10_9.csv, retrieval_sensitivity_8_9.csv | reranker over a spread of fixed candidate settings | 17 |
-| learning_curve_10_9.csv, learning_curve_8_9.csv | score against number of training codes | 18 |
-| category_holdout_10_9.csv, category_holdout_8_9.csv | reranker tested on ccs categories it never saw | 19 |
-| top1_accuracy.csv | is the top scoring target a correct one | 20 |
-| code_prefix_test.csv | code number in the embedding text or not | 23 |
-| similarity_matrix_example.csv | a small corner of a similarity matrix | 24 |
-| freq_dist_max_similarity.csv, freq_dist_top_cooccurrence.csv | how the two signals are spread | 25 |
-| portability.csv | the method without co-occurrence data or the chapter table | 29 |
-| bootstrap_*.csv, cv_fold_variability.csv | how much the numbers move on a different set of codes | 30 |
-| ccs_all_categories_*.csv, ccs_category_summary.csv, ccs_category_by_size.csv, ccs_delta_summary.csv | all 130 ccs categories | 31 |
-| per_code_rank.csv | where the correct code ranks, per code | 50 |
-| trend_*.csv | the five trend tables | 51 |
+| comparison/grid_results_*.csv, best_by_model.csv | the first clinicalbert against sapbert comparison | 02 |
+| comparison/ccs_breakdown_*.csv | that comparison by ccs category | 02 |
+| comparison/regression_summary.csv | categories where sapbert did better or worse | 03 |
+| comparison/bidirectional_roundtrip.csv | mapping backwards, and whether a mapping comes back to where it started | 05 |
+| comparison/code_prefix_test.csv | code number in the embedding text or not | 23 |
+| errors/error_analysis_*.csv | where correct pairs get lost in the pipeline | 09 |
+| reranker/ablation_*.csv | which feature groups the reranker needs | 16 |
+| reranker/retrieval_sensitivity_*.csv | reranker over a spread of fixed candidate settings | 17 |
+| reranker/learning_curve_*.csv | score against number of training codes | 18 |
+| reranker/category_holdout_*.csv | reranker tested on ccs categories it never saw | 19 |
+| reranker/top1_accuracy.csv | is the top scoring target a correct one | 20 |
+| reranker/portability.csv | the method without co-occurrence data or the chapter table | 29 |
+| variability/bootstrap_*.csv, cv_fold_variability.csv | how much the numbers move on a different set of codes | 30 |
+| categories/ccs_*.csv | all 130 ccs categories | 31 |
+| descriptive/similarity_matrix_example.csv | a small corner of a similarity matrix | 24 |
+| descriptive/freq_dist_*.csv | how the two signals are spread | 25 |
+| descriptive/per_code_rank.csv | where the correct code ranks, per code | 50 |
+| descriptive/trend_*.csv | the five trend tables | 51 |
 
 ## rerank
 
@@ -90,4 +92,5 @@ the codes with no reference match.
 ## figures
 
 each plot is named after the table it comes from, and made by the same script.
-logos.png is just for the readme.
+categories/ has the ccs category charts, unmatched/ has the no-match code
+charts, everything else sits at the top. logos.png is just for the readme.

@@ -12,7 +12,7 @@ Usage:
 
 --model:  clinicalbert | sapbert | mpnet
 --clean:  base       original label-cleaning only
-          stripped   also removes filler words from filler_words.json
+          stripped   also removes the filler words in FILLER_WORDS
           stopwords  also removes the snowball english stopword list, minus
                      single letters and no/not/nor
           stopwords_raw
@@ -22,7 +22,6 @@ Usage:
 Output goes to data/generated/cosine_similarity_matrices_{track}_{MODEL}_{clean}.xlsx
 """
 import argparse
-import json
 import re
 import sys
 from pathlib import Path
@@ -45,15 +44,48 @@ MODEL_IDS = {
 CLS_MODELS = {"clinicalbert", "sapbert"}
 
 
+FILLER_WORDS = [
+    "and", "or", "nos", "nec", "not otherwise specified",
+    "not elsewhere classified", "of", "the", "in", "due to", "type",
+]
+
+# snowball english, as published
+SNOWBALL = [
+    "i", "me", "my", "myself", "we", "our", "ours", "ourselves", "you",
+    "your", "yours", "yourself", "yourselves", "he", "him", "his", "himself",
+    "she", "her", "hers", "herself", "it", "its", "itself", "they", "them",
+    "their", "theirs", "themselves", "what", "which", "who", "whom", "this",
+    "that", "these", "those", "am", "is", "are", "was", "were", "be", "been",
+    "being", "have", "has", "had", "having", "do", "does", "did", "doing",
+    "would", "should", "could", "ought", "i'm", "you're", "he's", "she's",
+    "it's", "we're", "they're", "i've", "you've", "we've", "they've", "i'd",
+    "you'd", "he'd", "she'd", "we'd", "they'd", "i'll", "you'll", "he'll",
+    "she'll", "we'll", "they'll", "isn't", "aren't", "wasn't", "weren't",
+    "hasn't", "haven't", "hadn't", "doesn't", "don't", "didn't", "won't",
+    "wouldn't", "shan't", "shouldn't", "can't", "cannot", "couldn't",
+    "mustn't", "let's", "that's", "who's", "what's", "here's", "there's",
+    "when's", "where's", "why's", "how's", "a", "an", "the", "and", "but",
+    "if", "or", "because", "as", "until", "while", "of", "at", "by", "for",
+    "with", "about", "against", "between", "into", "through", "during",
+    "before", "after", "above", "below", "to", "from", "up", "down", "in",
+    "out", "on", "off", "over", "under", "again", "further", "then", "once",
+    "here", "there", "when", "where", "why", "how", "all", "any", "both",
+    "each", "few", "more", "most", "other", "some", "such", "no", "nor",
+    "not", "only", "own", "same", "so", "than", "too", "very", "will",
+]
+
+# keeping these stops two labels becoming identical
+SNOWBALL_KEEP = {"i", "a", "no", "nor", "not"}
+
+
 def load_filler_words():
-    with open(HERE / "filler_words.json") as f:
-        return json.load(f)["filler_words"]
+    return FILLER_WORDS
 
 
 def load_stopwords(which):
-    # snowball_safe keeps letters/negations, labels stay distinct
-    with open(HERE / "stopwords_snowball.json") as f:
-        return json.load(f)[which]["words"]
+    if which == "snowball":
+        return SNOWBALL
+    return [w for w in SNOWBALL if w not in SNOWBALL_KEEP]
 
 
 def base_clean(text):

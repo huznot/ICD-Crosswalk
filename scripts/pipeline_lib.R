@@ -7,23 +7,6 @@ library(readxl)
 library(stringr)
 library(purrr)
 
-# shared with generate_embeddings.py
-load_filler_words <- function(path = "filler_words.json") {
-  cfg <- jsonlite::fromJSON(path)
-  cfg$filler_words
-}
-
-strip_filler_words <- function(text, filler_words) {
-  text <- tolower(as.character(text))
-  # longest first, so "due to" goes whole
-  words <- filler_words[order(-nchar(filler_words))]
-  for (w in words) {
-    pattern <- paste0("\\b", str_replace_all(w, " ", "\\\\s+"), "\\b")
-    text <- str_replace_all(text, pattern, " ")
-  }
-  str_squish(text)
-}
-
 icd9cm_chapters <- tribble(
   ~chapter, ~start, ~end,
   1,  "001", "139",
