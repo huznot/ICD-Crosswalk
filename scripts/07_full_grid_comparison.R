@@ -1,6 +1,6 @@
 # full parameter grid for every embedding condition
-# 06_ only had budget for one operating point per track which is a weak way to
-# compare models, each one has a different similarity distribution
+# comparing models at one operating point is weak, each one has a different
+# similarity distribution.
 # merge_and_flag is ~130x faster now so this runs the whole grid:
 # thresholds {0.95,0.99,0.995,0.999} x top_n {3,5,10,15,20,25,30} x flags 1:4
 #

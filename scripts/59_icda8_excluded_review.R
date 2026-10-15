@@ -8,7 +8,7 @@ suppressMessages(library(openxlsx))
 #
 # the validation data is taken as correct unless something unambiguous turns
 # up, so only six are marked wrong and the reasoning travels with each one.
-# the accuracy effect is the last tab, it is the smallest part.
+# the accuracy effect is the last tab, every cutoff crossed with every top n.
 #
 # reads: 52_codes_no_icda8.xlsx      (52_icda8_excluded_list.R, the verdicts)
 #        unmatched_*_by_code.csv     (36_unmatched_descriptives.R, the signals)
@@ -125,7 +125,7 @@ ch$`Of which look wrong` <- vapply(ch$`ICD-9 chapter`,
 ch$Share <- sprintf("%.0f%%", 100 * ch$`Codes with no ICDA-8 match` / nrow(base))
 ch <- ch[order(-ch$`Codes with no ICDA-8 match`), ]
 
-## tab 4. the accuracy effect, last and smallest
+## tab 4. the accuracy effect, one row per setting
 eff <- read.csv(out_path("52_codes_accuracy_effect.csv"), stringsAsFactors = FALSE,
                 check.names = FALSE)
 names(eff) <- gsub("\\.", " ", names(eff))
@@ -158,7 +158,13 @@ add("the six that look wrong", six,
     c(10, 34, 28, 11, 38, 70, 70, 34, 17, 34, 17, 12), freeze_col = 2)
 add("the other 46", rest, c(10, 34, 28, 34, 34, 12, 40), filter = TRUE, freeze_col = 2)
 add("by chapter", ch, c(42, 16, 13, 8))
-add("accuracy effect", eff, c(14, 8, 30, 12, 12, 16, 14, 15, 15, 14, 16),
-    freeze_col = 2, wrap = FALSE)
+add("accuracy effect", eff,
+    c(14, 8, 30, 12, 12, 12, 11, 15, 12, 10, 10, 10, 10, 10, 10, 10, 9, 13, 13, 13, 12, 12, 12),
+    filter = TRUE, freeze_col = 6, wrap = FALSE)
+# the best setting for each model and rule in bold, so the rows the old summary
+# showed are still easy to find
+b <- which(eff$`Best for this model and rule` == "yes") + 1
+addStyle(wb, "accuracy effect", createStyle(textDecoration = "bold"), rows = b,
+         cols = seq_along(eff), gridExpand = TRUE, stack = TRUE)
 saveWorkbook(wb, OUT, overwrite = TRUE)
 cat("\nwrote", OUT, "\n")

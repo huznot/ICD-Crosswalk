@@ -23,8 +23,12 @@ OUT  <- out_path("52_codes_accuracy_effect.csv")   # 59_ reads this into the rev
 
 MODELS <- c(ClinicalBERT = "cosine_similarity_matrices_8_9_clinicalbert_base_nocode.xlsx",
             SapBERT      = "cosine_similarity_matrices_8_9_sapbert_base_nocode.xlsx")
-THRESHOLDS <- c(0.95, 0.99, 0.995, 0.999)   # the 8_9 track still uses the relative rule
-TOP_NS     <- c(10, 20, 25)
+# every cutoff crossed with every top n, so the effect of each step can be read
+# off directly. the cutoffs and top n values are the ones in table 2 of the
+# methods paper for this track (0.990 to 1.0, top 5 to 30 in steps of 5), plus
+# 0.95 which the earlier version of this table used
+THRESHOLDS <- c(0.95, 0.99, 0.995, 0.999, 1)   # the 8_9 track still uses the relative rule
+TOP_NS     <- seq(5, 30, by = 5)
 RULES      <- 1:4
 RULE_TEXT  <- c("1" = "top cosine or top co-occurrence",
                 "2" = "top cosine or in both lists",
@@ -114,43 +118,57 @@ res <- do.call(rbind, rows)
 res <- res[order(res$Model, res$`Rule number`, res$`Similarity threshold`,
                  res$`Top N co-occurring`, match(res$Scenario, vapply(SCEN, `[[`, "", "name"))), ]
 
-## what including them costs, at each model's best setting under each rule.
-## precision, recall and accuracy for the scenario that is actually reported,
-## then f1 for all three so the scenarios can be compared
-eff <- do.call(rbind, lapply(split(res, list(res$Model, res$`Rule number`)), function(d) {
-  inc <- d[d$Scenario == "codes included", ]
-  b   <- inc[which.max(inc$F1), ]
-  key <- d$`Similarity threshold` == b$`Similarity threshold` &
-         d$`Top N co-occurring` == b$`Top N co-occurring`
-  g <- function(s) d$F1[key & d$Scenario == s]
-  data.frame(Model = b$Model, `Rule number` = b$`Rule number`, Rule = b$Rule,
-             `Similarity threshold` = b$`Similarity threshold`,
-             `Top N co-occurring` = b$`Top N co-occurring`,
-             `Mappings for the 52 excluded codes` = b$`Mappings for the 52 excluded codes`,
-             `Correct pairs to find` = b$`Correct pairs to find`,
-             `True positives` = b$`True positives`,
-             `False positives` = b$`False positives`,
-             `False negatives` = b$`False negatives`,
-             Precision = b$Precision, Recall = b$Recall, F1 = b$F1,
-             # accuracy here is tp / (tp + fp + fn), the measure the rest of the
-             # repo uses. there is no true negative count to work with
-             Accuracy = round(b$`True positives` /
-                              (b$`True positives` + b$`False positives` +
-                               b$`False negatives`), 3),
-             `F1 if the 52 are dropped` = g("codes dropped"),
-             `F1 with the six fixes` = g("six corrections"),
-             `F1 change from including` = round(g("codes included") - g("codes dropped"), 3),
-             check.names = FALSE)
-}))
-eff <- eff[order(eff$Model, eff$`Rule number`), ]
+## one row per setting, the scenario that is actually reported, with f1 for the
+## other two alongside. sorted so top n climbs within each cutoff, and the f1
+## change from the step before is its own column
+g <- function(sc) res[res$Scenario == sc, ]
+eff <- g("codes included")
+key <- function(d) paste(d$Model, d$`Rule number`, d$`Similarity threshold`, d$`Top N co-occurring`)
+eff$`F1 if the 52 are dropped` <- g("codes dropped")$F1[match(key(eff), key(g("codes dropped")))]
+eff$`F1 with the six fixes`    <- g("six corrections")$F1[match(key(eff), key(g("six corrections")))]
+eff$`F1 change from including` <- round(eff$F1 - eff$`F1 if the 52 are dropped`, 3)
+# accuracy here is tp / (tp + fp + fn), the measure the rest of the repo uses.
+# there is no true negative count to work with
+eff$Accuracy <- round(eff$`True positives` /
+                      (eff$`True positives` + eff$`False positives` + eff$`False negatives`), 3)
+eff <- eff[order(eff$Model, eff$`Rule number`, eff$`Similarity threshold`,
+                 eff$`Top N co-occurring`), ]
 
-cat("
-effect at each model's best setting, per rule
-")
-print(eff[, c("Model", "Rule number", "Precision", "Recall", "F1", "Accuracy",
-              "F1 if the 52 are dropped", "F1 change from including")], row.names = FALSE)
+grp <- paste(eff$Model, eff$`Rule number`, eff$`Similarity threshold`)
+prev <- function(x) ave(x, grp, FUN = function(v) c(NA, head(v, -1)))
+eff$`Top N before` <- prev(eff$`Top N co-occurring`)
+eff$`F1 change from the top N before` <- round(eff$F1 - prev(eff$F1), 3)
+eff$`Precision change from the top N before` <- round(eff$Precision - prev(eff$Precision), 3)
+eff$`Recall change from the top N before` <- round(eff$Recall - prev(eff$Recall), 3)
+
+# the setting with the best f1 for each model and rule, which is what this table
+# used to show on its own. ties go to the smaller cutoff and top n
+best <- unlist(lapply(split(seq_len(nrow(eff)), paste(eff$Model, eff$`Rule number`)),
+                      function(i) i[order(-eff$F1[i], eff$`Similarity threshold`[i],
+                                          eff$`Top N co-occurring`[i])][1]))
+eff$`Best for this model and rule` <- ifelse(seq_len(nrow(eff)) %in% best, "yes", "")
+
+eff <- eff[, c("Model", "Rule number", "Rule", "Similarity threshold",
+               "Top N co-occurring", "Best for this model and rule",
+               "Mappings produced", "Mappings for the 52 excluded codes",
+               "Correct pairs to find", "True positives", "False positives",
+               "False negatives", "Precision", "Recall", "F1", "Accuracy",
+               "Top N before", "Precision change from the top N before",
+               "Recall change from the top N before", "F1 change from the top N before",
+               "F1 if the 52 are dropped", "F1 with the six fixes",
+               "F1 change from including")]
+
+cat("\nbest setting for each model and rule\n")
+print(eff[eff$`Best for this model and rule` == "yes",
+          c("Model", "Rule number", "Similarity threshold", "Top N co-occurring",
+            "Precision", "Recall", "F1", "F1 change from including")], row.names = FALSE)
+
+cat("\nhow far f1 moves for one step up in top n\n")
+for (m in names(MODELS)) for (rl in RULES) {
+  d <- abs(eff$`F1 change from the top N before`[eff$Model == m & eff$`Rule number` == rl])
+  cat(sprintf("  %-12s rule %d  median %.3f  largest %.3f\n", m, rl,
+              median(d, na.rm = TRUE), max(d, na.rm = TRUE)))
+}
 
 write.csv(eff, OUT, row.names = FALSE)
-cat("
-wrote", OUT, "
-")
+cat("\nwrote", OUT, "\n")

@@ -32,7 +32,10 @@ for each old code the pipeline builds two candidate lists, then picks from them:
 | [code number in the label](results/workbooks/2_icda8_code_in_label.xlsx) | whether embedding the code number with the label matters |
 | [why sapbert scores lower](results/workbooks/3_similarity_gap_by_model.xlsx) | correct pairs against everything else, per model |
 | [all 130 ccs categories](results/workbooks/4_counts_by_ccs_category.xlsx) | counts per category |
-| [the 52 with no icda-8 match](results/review/52_codes_review.xlsx) | the review of those codes |
+| [the 52 with no icda-8 match](results/review/52_codes_review.xlsx) | the review of those codes, and every cutoff crossed with every top n from 5 to 30 |
+
+[docs/tables.md](docs/tables.md) lists every other table and the script that
+makes it.
 
 best f1 is 0.544 on icd-9 to icd-10-ca and 0.761 on icd-9 to icda-8, against
 0.423 and 0.716 for the original pipeline. those score all 354 icd-9-cm codes,
@@ -55,7 +58,7 @@ r packages: `dplyr`, `tidyr`, `readxl`, `stringr`, `purrr`, `ggplot2`,
 python is only needed to rebuild the embeddings:
 
 ```bash
-python scripts/generate_embeddings.py --model mpnet --clean base
+python scripts/generate_embeddings.py --model sapbert --clean base
 ```
 
 ## layout
@@ -63,7 +66,7 @@ python scripts/generate_embeddings.py --model mpnet --clean base
 ```
 data/        labels, co-occurrence tables, manual crosswalks, matrices
 scripts/     pipeline code, numbered in the order it was written
-docs/        the paper drafts and the change log
+docs/        tables.md, a list of every output
 results/     everything the scripts produce
 run_all.R    rebuilds it all in dependency order
 ```

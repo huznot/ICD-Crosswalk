@@ -102,7 +102,7 @@ chapter_alignment_8 <- setNames(as.list(1:17), as.character(1:17))
 # these used to run per row under rowwise, one dplyr::filter per candidate, which
 # cost ~20-30s per grid point. both are lookups over a <=22 row table so compute
 # once per distinct code and recycle with match. output is identical to the old
-# version, verify_vectorized_equivalence.R checks it
+# version, this only changed the speed
 find_chapter <- function(code, chapter_table, pad_width = 3, alpha = FALSE) {
   code <- as.character(code)
   uniq <- unique(code)

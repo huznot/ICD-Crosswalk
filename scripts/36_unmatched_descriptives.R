@@ -87,7 +87,7 @@ for (tr in names(TRACKS)) {
 
   group_of <- function(x) ifelse(x %in% unmatched, "no reference match", "has a reference match")
 
-  # ---- cosine similarity ----
+  # cosine similarity
   for (mdl in names(SIM)) {
     L <- long_similarity(SIM[[mdl]][[tr]]) %>% mutate(group = group_of(icd9))
 
@@ -157,7 +157,7 @@ for (tr in names(TRACKS)) {
     }
   }
 
-  # ---- co-occurrence ----
+  # co-occurrence
   cooc <- read_excel(file.path(ORIG, tk$cooc_file))
   names(cooc)[names(cooc) == tk$cooc_icd9]   <- "icd9"
   names(cooc)[names(cooc) == tk$cooc_target] <- "target"
@@ -241,7 +241,7 @@ write.csv(r3(group_summary), out_path("unmatched_descriptives_summary.csv"), row
 if (length(top_pairs))
   write.csv(bind_rows(top_pairs), out_path("unmatched_top_cooccurrence_pairs.csv"), row.names = FALSE)
 
-# ---- charts ----
+# charts
 # groups differ in size, 9 against 345 and 52 against 302, so counts on a
 # shared axis would say nothing. one point per code with a box behind it shows
 # every code and still puts the two spreads on the same scale

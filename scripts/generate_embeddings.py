@@ -41,9 +41,8 @@ MODEL_IDS = {
     "mpnet": "sentence-transformers/all-mpnet-base-v2",
 }
 
-# clinicalbert/sapbert: raw transformers + CLS token, same as
-# 01_generate_sapbert_embeddings.R. Kept in pure Python because reticulate
-# returns wrong numbers for this.
+# clinicalbert/sapbert: raw transformers + CLS token. done in python rather than
+# through reticulate in r, because reticulate returned wrong numbers for this
 CLS_MODELS = {"clinicalbert", "sapbert"}
 
 

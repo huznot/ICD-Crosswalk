@@ -132,7 +132,7 @@ for (tr in unique(res$track)) {
 }
 cat("\nProjections assume the curve keeps its shape and are not measurements.\n")
 
-# figure 3 in the report. reads both tracks from disk rather than `res` so the
+# the learning curve plot. reads both tracks from disk rather than `res` so the
 # plot is correct whether this ran one track or both
 suppressMessages(library(ggplot2))
 lc_files <- out_path(sprintf("learning_curve_%s.csv", c("10_9", "8_9")))

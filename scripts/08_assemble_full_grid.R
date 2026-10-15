@@ -34,7 +34,7 @@ cat(sprintf("%d rows, %d conditions, %d points per condition x track\n",
 
 write.csv(all_grid, out_path("full_grid_all.csv"), row.names = FALSE)
 
-# --- best point per condition x track ---------------------------------
+# best point per condition x track
 best <- all_grid %>%
   group_by(track, model) %>%
   slice_max(order_by = f1, n = 1, with_ties = FALSE) %>%
@@ -74,7 +74,7 @@ paired_points <- paired %>%
             .groups = "drop")
 write.csv(paired_points, out_path("full_grid_stripping_paired.csv"), row.names = FALSE)
 
-# --- task 2: general-purpose (mpnet) vs domain-specific ---------------
+# general purpose model (mpnet) against the medical ones
 family_best <- all_grid %>%
   group_by(track, family) %>%
   slice_max(order_by = f1, n = 1, with_ties = FALSE) %>%
@@ -84,8 +84,8 @@ family_best <- all_grid %>%
   arrange(track, desc(f1))
 write.csv(family_best, out_path("full_grid_family.csv"), row.names = FALSE)
 
-# rank by best over grid f1 vs f1 at the single point 06_ used. if they disagree
-# the single point comparison was measuring the point
+# rank by best over grid f1 vs f1 at the single point the first comparison used. if
+# they disagree, the single point comparison was measuring the point
 SHARED_POINT <- list(`10_9` = list(thr = 0.995, tn = 30),
                      `8_9`  = list(thr = 0.99,  tn = 5))
 
@@ -131,8 +131,8 @@ print(as.data.frame(sensitivity %>% select(track, model, best_f1, f1_median, f1_
                                            rank_changed)))
 cat("\nDone.\n")
 
-# figure 1 in the report. built here rather than in 03_ so it comes from the
-# same table as table 1 and covers all three models
+# f1 range per model. built here rather than in 03_ so it comes from the
+# same table as full_grid_best.csv and covers all three models
 suppressMessages(library(ggplot2))
 KEEP <- c("ClinicalBERT-original" = "ClinicalBERT",
           "SapBERT-base"          = "SapBERT",

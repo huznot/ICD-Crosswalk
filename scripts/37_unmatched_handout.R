@@ -9,16 +9,11 @@
 # what the algorithm emits for them, and whether a threshold on either signal
 # would separate them.
 #
-# house style: no em dashes, no date in the heading,
-# short noun phrase headings, portrait letter with one inch margins, plain
-# words, and no recommendations. the methodology is the pi's, so this describes
-# and does not advise. no "as expected" framing either, nothing was predicted.
-#
 # the html is one single quoted R string, so apostrophes need a backslash.
 #
-# writes results/unmatched_codes_handout.html. to get the pdf:
+# writes results/unmatched/unmatched_codes_handout.html. to get the pdf:
 #   chrome --headless --disable-gpu --no-pdf-header-footer \
-#     --print-to-pdf=results/unmatched_codes.pdf results/unmatched_codes_handout.html
+#     --print-to-pdf=results/unmatched/unmatched_codes.pdf results/unmatched/unmatched_codes_handout.html
 #
 # usage: Rscript 37_unmatched_handout.R
 
@@ -53,7 +48,7 @@ tbl <- function(df, headers, align_right, cls = "") {
          paste(rows, collapse = ""), "</tbody></table>")
 }
 
-# ---- the two groups together, with the codes that do have a match alongside ----
+# the two groups together, with the codes that do have a match alongside
 GRP <- c("no reference match", "has a reference match")
 lab <- c("no reference match" = "no match", "has a reference match" = "has a match")
 tgt <- c("10_9" = "ICD-10-CA", "8_9" = "ICDA-8")
@@ -84,7 +79,7 @@ grp_cooc_tbl <- function() {
       c(FALSE, FALSE, rep(TRUE, 8)), "grp")
 }
 
-# ---- per code ----
+# per code
 # ends = NULL lists every code, ends = n keeps only the n highest and n lowest
 sim_tbl <- function(tk, ends = NULL) {
   d <- sim %>% filter(model == MODEL, track == tk, group == "no reference match") %>%
@@ -111,7 +106,7 @@ cooc_tbl <- function(tk) {
       c(FALSE, FALSE, rep(TRUE, 6), FALSE))
 }
 
-# ---- numbers used in the prose ----
+# numbers used in the prose
 rng <- function(tk, grp) {
   d <- sim %>% filter(model == MODEL, track == tk, group == grp)
   sprintf("%s to %s", f3(min(d$max)), f3(max(d$max)))

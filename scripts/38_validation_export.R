@@ -54,7 +54,7 @@ for (tr in names(TRACKS)) {
   cat(sprintf("\n=== %s ===\n%d target codes in the code list, %d icd-9 with a match, %d without\n",
               tk$label, nrow(tgt), n_distinct(man$`ICD-9-CM`), length(unmatched)))
 
-  # ---- the reference crosswalk itself, one row per manually mapped pair ----
+  # the reference crosswalk itself, one row per manually mapped pair
   pairs <- man %>%
     transmute(icd9 = as.character(`ICD-9-CM`), target = as.character(.data[[tk$manual_col]])) %>%
     left_join(icd9_lab, by = "icd9") %>%
@@ -74,7 +74,7 @@ for (tr in names(TRACKS)) {
   cat(sprintf("%d reference pairs, %d of them fail the chapter filter\n",
               nrow(pairs), sum(!pairs$survives_chapter_filter, na.rm = TRUE)))
 
-  # ---- what the pipeline emits for the codes with no reference match ----
+  # what the pipeline emits for the codes with no reference match
   cooc <- load_cooccurrence_df(file.path(ORIG, tk$cooc_file))
   res  <- tk$run(load_similarity_sheets(tk$sim_file), cooc, man, ccs %>% select(ICD_9_CM, CCS_ID), exc,
                  similarity_threshold = tk$thr, top_n = tk$top_n, flag_combination = tk$algo)

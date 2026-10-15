@@ -77,7 +77,7 @@ for (tr in names(TRACKS)) {
     b <- tk$best
     sheets <- load_similarity_sheets(MODELS[[mdl]][[tr]])
 
-    # --- stage 1: raw signals, before any filtering -------------------
+    # stage 1: raw signals, before any filtering
     sim_raw <- get_similarity_scores_from_sheets(sheets, b$thr, tcn) %>%
       transmute(ICD_9_CM = as.character(ICD_9_CM), target = as.character(.data[[tcn]]), Similarity)
     cooc_raw <- get_cooccurrence_codes_from_df(tk$cooc, b$tn, tk$icd9_col, tk$target_col, tcn) %>%
@@ -90,14 +90,14 @@ for (tr in names(TRACKS)) {
       transmute(ICD_9_CM = as.character(ICD_9_CM), target = as.character(.data[[tcn]])) %>%
       distinct()
 
-    # --- stage 2: pool after merge + chapter filter --------------------
+    # stage 2: pool after merge + chapter filter
     pool <- merge_and_flag(
       sim_raw %>% rename(!!tcn := target),
       cooc_raw %>% rename(!!tcn := target),
       tcn, tk$find_fn, tk$align)
     pool_pairs <- pool %>% transmute(ICD_9_CM, target = .data[[tcn]]) %>% distinct()
 
-    # --- stage 3: what the flag rule actually emits --------------------
+    # stage 3: what the flag rule actually emits
     emitted <- select_rows_by_flags(pool, b$flag) %>%
       transmute(ICD_9_CM, target = .data[[tcn]]) %>% distinct()
 

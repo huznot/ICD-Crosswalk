@@ -1,7 +1,7 @@
 # how much do the reported numbers move if the code set had been slightly
-# different. every score in the report is one number off 354 icd-9 codes with no
+# different. every score is one number off 354 icd-9 codes with no
 # indication of how stable it is, so this puts a standard deviation on all of
-# them, and on every difference the report claims
+# them, and on every difference we compare
 #
 # method: cluster bootstrap. resample the icd-9 codes with replacement, keeping
 # all of a code's pairs together, recompute the metric, repeat B times. the sd
@@ -25,7 +25,7 @@ B <- 2000
 
 gen <- function(tag) file.path(GEN_BASE, sprintf("cosine_similarity_matrices_%%s_%s.xlsx", tag))
 
-# every condition in the report, keyed by the model name used in full_grid_best.csv
+# every condition, keyed by the model name used in full_grid_best.csv
 CONDITIONS <- list(
   `ClinicalBERT-original`         = file.path(ORIG_BASE, "Cosine_Similarity_Matrices/cosine_similarity_matrices_%s_ClinicalBERT.xlsx"),
   `ClinicalBERT-base`             = gen("clinicalbert_base"),
@@ -40,7 +40,7 @@ CONDITIONS <- list(
   `mpnet-stripped`                = gen("mpnet_stripped")
 )
 
-# every difference the report claims, as model against reference. the deltas are
+# every difference we compare, as model against reference. the deltas are
 # computed inside each bootstrap draw so both arms see the same codes
 COMPARISONS <- list(
   c("ClinicalBERT-base", "ClinicalBERT-original"),
@@ -56,7 +56,7 @@ COMPARISONS <- list(
   c("mpnet-stripped", "mpnet-base")
 )
 
-# arms for the top-1 retrieval numbers in report tables 3 and 4
+# arms for the top-1 retrieval numbers
 TOP1_ARMS <- list(
   `ClinicalBERT, code and label` = gen("clinicalbert_base"),
   `ClinicalBERT, label only`     = gen("clinicalbert_base_nocode"),
@@ -150,7 +150,7 @@ align_codes <- function(counts_list) {
   })
 }
 
-# --- part 1, f1 at the best grid point --------------------------------
+# part 1, f1 at the best grid point
 
 var_rows   <- list()
 delta_rows <- list()
@@ -215,7 +215,7 @@ print(as.data.frame(variability %>% filter(metric == "f1") %>% select(-metric)))
 cat("\n=== every claimed difference in f1 ===\n")
 print(as.data.frame(deltas %>% filter(metric == "f1") %>% select(-metric)))
 
-# --- part 2, top-1 retrieval ------------------------------------------
+# part 2, top-1 retrieval
 
 # highest scoring target for each icd-9 code, across all sheets of a matrix
 top1_hits <- function(path, truth) {
@@ -301,7 +301,7 @@ print(as.data.frame(top1_var))
 cat("\n=== effect of removing the code number on top-1 ===\n")
 print(as.data.frame(top1_delta))
 
-# --- part 3, the cross validated pipeline -----------------------------
+# part 3, the cross validated pipeline
 
 # the reranker is evaluated by five fold cross validation, so its spread comes
 # straight from the folds rather than a bootstrap

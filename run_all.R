@@ -26,8 +26,8 @@ run <- function(script, args = character()) {
 # the four step pipeline, searched over the full grid
 if (!QUICK) {
   run("07_full_grid_comparison.R")   # slowest step, all 12 conditions
-  run("08_assemble_full_grid.R")     # summary tables + report figure 1
-  run("09_error_analysis.R")         # where correct pairs are lost, section 4
+  run("08_assemble_full_grid.R")     # summary tables and the f1 range plot
+  run("09_error_analysis.R")         # where correct pairs are lost
   run("10_candidate_generation_study.R")
 }
 
@@ -38,8 +38,8 @@ run("12b_merge_cv_results.R")
 run("13_precision_coverage.R")       # confidence thresholds and triage
 
 # follow ups that depend on the cv predictions
-run("30_variability.R")              # bootstrap sd, section 12
-run("31_category_breakdown.R")       # all 130 ccs categories, section 13
+run("30_variability.R")              # bootstrap sd
+run("31_category_breakdown.R")       # all 130 ccs categories
 
 # these name their output after the tracks they were given, and 18_ reads the
 # per track files back, so pass one track at a time
@@ -61,8 +61,8 @@ run("22_target_block_structure.R")
 run("25_frequency_distributions.R")
 run("26_stopword_choice.R")
 run("28_stopwords_and_codes.R")
-run("35_unmatched_codes.R")          # codes with no correct answer, section 2
-run("36_unmatched_descriptives.R")   # those codes described on their own, section 11
+run("35_unmatched_codes.R")          # codes with no correct answer
+run("36_unmatched_descriptives.R")   # those codes described on their own
 run("37_unmatched_handout.R")        # standalone html of the same thing
 run("27_show_results.R")             # every headline number
 
@@ -85,7 +85,8 @@ run("53_threshold_frequencies.R")     # counts behind each cutoff, not summaries
 run("54_icda8_code_in_label.R")       # code in the label on the icda-8 track
 run("55_median_similarity_gap.R")     # why sapberts median sits so much lower
 run("56_category_counts.R")           # all 130 ccs categories at the plain cutoffs
-run("57_clinicalbert_vs_sapbert.R")    # head to head, same top n and rule for both
-run("58_icda8_excluded_effect.R")      # the 52 with no icda-8 match, in the estimates
+run("57_clinicalbert_vs_sapbert.R")   # head to head, same top n and rule for both
+run("58_icda8_excluded_effect.R")     # the 52 with no icda-8 match, every cutoff x top n
+run("59_icda8_excluded_review.R")     # the 52 review workbook, reads 52_ and 58_
 
 cat("\nall done. results/ is rebuilt.\n")

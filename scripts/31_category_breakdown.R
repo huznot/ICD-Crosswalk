@@ -163,7 +163,7 @@ size_summary <- breakdown %>%
             sd_f1 = round(sd(f1), 3), .groups = "drop")
 write.csv(size_summary, out_path("ccs_category_by_size.csv"), row.names = FALSE)
 
-# --- charts -----------------------------------------------------------
+# charts
 
 # 130 bars do not fit in one readable column, so they are ranked and dealt into
 # three columns of about 44

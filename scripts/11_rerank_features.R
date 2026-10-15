@@ -93,7 +93,7 @@ for (tr in names(TRACKS)) {
   tk <- TRACKS[[tr]]
   cat(sprintf("\n######## building features for track %s ########\n", tr))
 
-  # --- similarity, all models -----------------------------------------
+  # similarity, all models
   sims <- list()
   for (mdl in names(tk$sim)) {
     cat(sprintf("  loading similarity: %s\n", mdl))
@@ -121,7 +121,7 @@ for (tr in names(TRACKS)) {
     sims[[mdl]] <- s
   }
 
-  # --- co-occurrence ---------------------------------------------------
+  # co-occurrence
   cooc_raw <- load_cooccurrence_df(file.path(ORIG_BASE, tk$cooc_file)) %>% as.data.frame()
   names(cooc_raw)[names(cooc_raw) == tk$icd9_col]   <- "ICD_9_CM"
   names(cooc_raw)[names(cooc_raw) == tk$target_col] <- "target"
@@ -134,7 +134,7 @@ for (tr in names(TRACKS)) {
            cooc_rel   = cooc_freq / max(cooc_freq, na.rm = TRUE)) %>%
     ungroup()
 
-  # --- maximal candidate pool -----------------------------------------
+  # maximal candidate pool
   pool <- bind_rows(
     lapply(names(sims), function(m)
       sims[[m]] %>% filter(.data[[paste0("simrank_", m)]] <= MAX_SIM_K) %>% select(ICD_9_CM, target)),
@@ -164,7 +164,7 @@ for (tr in names(TRACKS)) {
     }
   }
 
-  # --- ensemble across models ------------------------------------------
+  # ensemble across models
   # fuse ranks not raw scores, cosine scales differ between models but ranks dont
   rank_cols    <- paste0("simrank_",    names(sims))
   rel_cols     <- paste0("simrel_",     names(sims))
@@ -191,7 +191,7 @@ for (tr in names(TRACKS)) {
            # positive when the target wants this code more than the reverse
            ens_direction_gap = ens_mean_rel - ens_mean_relrev)
 
-  # --- chapter features ------------------------------------------------
+  # chapter features
   ch9  <- find_icd9cm_chapter(feat$ICD_9_CM)
   cht  <- tk$find_fn(feat$target)
   feat <- feat %>%
@@ -200,7 +200,7 @@ for (tr in names(TRACKS)) {
            chapter_ok = as.integer(!is.na(chapter_distance) & chapter_distance < 1),
            chapter_pair = paste(ch9, cht, sep = "_"))
 
-  # --- lexical features ------------------------------------------------
+  # lexical features
   cat("  computing lexical features...\n")
   feat <- feat %>%
     left_join(icd9_labels, by = "ICD_9_CM") %>%
@@ -214,7 +214,7 @@ for (tr in names(TRACKS)) {
   lf <- lexical_features(feat$icd9_label, feat$target_label, idf)
   for (nm in names(lf)) feat[[nm]] <- lf[[nm]]
 
-  # --- per-code context features ---------------------------------------
+  # per-code context features
   feat <- feat %>% group_by(ICD_9_CM) %>%
     mutate(n_candidates = n(),
            ens_rrf_rank = rank(-ens_rrf, ties.method = "first"),
@@ -231,7 +231,7 @@ for (tr in names(TRACKS)) {
            target_is_best_here = as.integer(target_rank_here == 1)) %>%
     ungroup()
 
-  # --- label ------------------------------------------------------------
+  # label
   manual <- read_excel(VAL_XLSX, sheet = tk$manual_sheet)
   excl   <- read_excel(VAL_XLSX, sheet = tk$excl_sheet)
   excluded <- as.character(excl$`ICD-9-CM`)

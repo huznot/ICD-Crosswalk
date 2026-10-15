@@ -2,16 +2,14 @@ source(if (file.exists("paths.R")) "paths.R" else "scripts/paths.R")
 
 suppressMessages({library(dplyr)})
 
-R <- "results"
 get <- function(f) {
-  p <- file.path(R, f)
+  p <- out_path(f)
   if (!file.exists(p)) { cat(sprintf("  [missing %s, rerun the script that makes it]\n", f)); return(NULL) }
   read.csv(p, stringsAsFactors = FALSE)
 }
 hdr <- function(n, s) cat(sprintf("\n\n=========== %s. %s ===========\n", n, s))
 tname <- function(x) ifelse(x == "10_9", "ICD-9 to ICD-10-CA", "ICD-9 to ICDA-8")
 
-# ---------------------------------------------------------------- 1
 hdr(1, "where the project started and where it is now")
 d <- get("cv_rerank_results.csv")
 if (!is.null(d)) {
@@ -33,7 +31,6 @@ if (!is.null(d)) {
   cat("\n  f1 is a score out of 1. higher is better.\n")
 }
 
-# ---------------------------------------------------------------- 2
 hdr(2, "the main finding, where correct answers were being lost")
 d <- get("error_analysis_summary.csv")
 if (!is.null(d)) {
@@ -61,7 +58,6 @@ if (!is.null(d)) {
   cat("  retrieval step was the problem and not the model.\n")
 }
 
-# ---------------------------------------------------------------- 3
 hdr(3, "embedding model comparison")
 d <- get("full_grid_best.csv")
 if (!is.null(d)) {
@@ -74,7 +70,6 @@ if (!is.null(d)) {
   cat("\n  mpnet has no medical training and still matches sapbert on ICD-10-CA.\n")
 }
 
-# ---------------------------------------------------------------- 4
 hdr(4, "is the right answer reachable at all")
 d <- get("top1_accuracy.csv")
 if (!is.null(d)) {
@@ -86,7 +81,6 @@ if (!is.null(d)) {
   cat("  whether the output rule decides to keep it.\n")
 }
 
-# ---------------------------------------------------------------- 5
 hdr(5, "what happens at a 95% precision target")
 d <- get("precision_coverage_triage.csv")
 if (!is.null(d)) {
@@ -98,7 +92,6 @@ if (!is.null(d)) {
   }
 }
 
-# ---------------------------------------------------------------- 6
 hdr(6, "which parts of the system earn their place")
 for (tr in c("10_9", "8_9")) {
   d <- get(sprintf("ablation_%s.csv", tr))
@@ -118,7 +111,6 @@ for (tr in c("10_9", "8_9")) {
 cat("\n  most negative = most important. the reverse direction features matter\n")
 cat("  most on ICD-10-CA. clinicalbert earns nothing once the others are in.\n")
 
-# ---------------------------------------------------------------- 7
 hdr(7, "would more training data help")
 for (tr in c("10_9", "8_9")) {
   d <- get(sprintf("learning_curve_%s.csv", tr))
@@ -133,7 +125,6 @@ for (tr in c("10_9", "8_9")) {
 cat("\n  it flattens out. more manually mapped codes of the same kind would\n")
 cat("  not move the result.\n")
 
-# ---------------------------------------------------------------- 8
 hdr(8, "does it work on clinical areas it has never seen")
 for (tr in c("10_9", "8_9")) {
   d <- get(sprintf("category_holdout_%s.csv", tr))
@@ -146,7 +137,6 @@ for (tr in c("10_9", "8_9")) {
 cat("\n  holding out whole CCS categories costs almost nothing, so it is not\n")
 cat("  memorising categories.\n")
 
-# ---------------------------------------------------------------- 9
 hdr(9, "how much would these numbers move on a different set of codes")
 d <- get("bootstrap_variability.csv")
 if (!is.null(d)) {
@@ -162,7 +152,6 @@ if (!is.null(d)) {
   cat("  0.015 and 0.022, so the ~0.10 gain from sapbert is far bigger than noise.\n")
 }
 
-# ---------------------------------------------------------------- 10
 hdr(10, "how evenly it works across the 130 ccs categories")
 d <- get("ccs_category_summary.csv")
 if (!is.null(d)) {
