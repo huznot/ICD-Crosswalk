@@ -51,7 +51,7 @@ for (m in names(MODELS)) {
           Model = m, `Rule number` = rl, Rule = unname(RULE_TEXT[as.character(rl)]),
           `Similarity threshold` = thr, `Top N co-occurring` = tn,
           `Mappings produced` = nrow(au),
-          `Mappings for the 52 codes` = sum(as.character(au$ICD_9_CM) %in% e52),
+          `False positives from the 52 codes` = sum(as.character(au$ICD_9_CM) %in% e52),
           `Correct pairs to find` = tp + fn,
           `True positives` = tp, `False positives` = fp, `False negatives` = fn,
           Precision = round(tp / (tp + fp), 3),

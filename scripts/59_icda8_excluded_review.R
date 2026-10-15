@@ -101,7 +101,7 @@ shade <- function(cn, colours) {
                         type = "colourScale", style = colours)
 }
 for (cn in c("True positives", "Precision", "Recall", "F1", "Accuracy")) shade(cn, GOOD_HIGH)
-for (cn in c("False positives", "False negatives", "Mappings for the 52 codes")) shade(cn, GOOD_LOW)
+for (cn in c("False positives", "False negatives")) shade(cn, GOOD_LOW)
 
 saveWorkbook(wb, OUT, overwrite = TRUE)
 cat("wrote", OUT, "\n")

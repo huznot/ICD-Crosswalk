@@ -1,4 +1,4 @@
-"Model","Rule number","Rule","Similarity threshold","Top N co-occurring","Best for this model and rule","Mappings produced","Mappings for the 52 codes","Correct pairs to find","True positives","False positives","False negatives","Precision","Recall","F1","Accuracy"
+"Model","Rule number","Rule","Similarity threshold","Top N co-occurring","Best for this model and rule","Mappings produced","False positives from the 52 codes","Correct pairs to find","True positives","False positives","False negatives","Precision","Recall","F1","Accuracy"
 "ClinicalBERT",1,"top cosine or top co-occurrence",0.95,5,"",472,51,331,246,226,85,0.521,0.743,0.613,0.442
 "ClinicalBERT",1,"top cosine or top co-occurrence",0.95,10,"",475,51,331,246,229,85,0.518,0.743,0.61,0.439
 "ClinicalBERT",1,"top cosine or top co-occurrence",0.95,15,"",476,51,331,246,230,85,0.517,0.743,0.61,0.439
