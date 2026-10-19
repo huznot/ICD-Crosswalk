@@ -1,6 +1,6 @@
 # how much the numbers move on a different set of codes
-# cluster bootstrap over icd-9 codes, cv fold spread for the reranker
-# writes bootstrap_*.csv and cv_fold_variability.csv
+# cluster bootstrap over icd-9 codes
+# writes bootstrap_*.csv
 
 source("scripts/paths.R")
 source("scripts/pipeline_lib.R")
@@ -284,22 +284,5 @@ print(as.data.frame(top1_var))
 cat("\n=== effect of removing the code number on top-1 ===\n")
 print(as.data.frame(top1_delta))
 
-# part 3: the cv reranker
-
-# spread straight from the cv folds
-folds_path <- out_path("cv_rerank_folds.csv")
-if (file.exists(folds_path)) {
-  folds <- read.csv(folds_path, stringsAsFactors = FALSE)
-  fold_var <- folds %>%
-    select(track, fold, baseline_f1, rerank_f1, baseline_accuracy, rerank_accuracy) %>%
-    tidyr::pivot_longer(-c(track, fold), names_to = "metric", values_to = "value") %>%
-    group_by(track, metric) %>%
-    summarise(n_folds = n(), mean = round(mean(value), 4), sd = round(sd(value), 4),
-              min = round(min(value), 4), max = round(max(value), 4), .groups = "drop")
-  write.csv(fold_var, out_path("cv_fold_variability.csv"), row.names = FALSE)
-  cat("\n=== across the five cross validation folds ===\n")
-  print(as.data.frame(fold_var))
-}
-
 cat("\nDone. Wrote bootstrap_variability.csv, bootstrap_deltas.csv,",
-    "bootstrap_top1.csv, bootstrap_top1_deltas.csv, cv_fold_variability.csv\n")
+    "bootstrap_top1.csv, bootstrap_top1_deltas.csv\n")

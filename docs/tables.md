@@ -50,31 +50,12 @@ split into folders by topic.
 | comparison/bidirectional_roundtrip.csv | mapping backwards, and whether a mapping comes back to where it started | analysis/bidirectional.R |
 | comparison/code_prefix_test.csv | code number in the embedding text or not | analysis/code_prefix_test.R |
 | errors/error_analysis_*.csv | where correct pairs get lost in the pipeline | analysis/error_analysis.R |
-| reranker/ablation_*.csv | which feature groups the reranker needs | reranker/ablation.R |
-| reranker/retrieval_sensitivity_*.csv | reranker over a spread of fixed candidate settings | reranker/retrieval_sensitivity.R |
-| reranker/learning_curve_*.csv | score against number of training codes | reranker/learning_curve.R |
-| reranker/category_holdout_*.csv | reranker tested on ccs categories it never saw | reranker/category_holdout.R |
-| reranker/top1_accuracy.csv | is the top scoring target a correct one | reranker/top1_accuracy.R |
-| reranker/portability.csv | the method without co-occurrence data or the chapter table | reranker/portability.R |
-| variability/bootstrap_*.csv, cv_fold_variability.csv | how much the numbers move on a different set of codes | analysis/variability.R |
+| variability/bootstrap_*.csv | how much the numbers move on a different set of codes | analysis/variability.R |
 | categories/ccs_*.csv | all 130 ccs categories | analysis/category_breakdown.R |
 | descriptive/similarity_matrix_example.csv | a small corner of a similarity matrix | analysis/similarity_matrix_example.R |
 | descriptive/freq_dist_*.csv | how the two signals are spread | analysis/frequency_distributions.R |
 | descriptive/per_code_rank.csv | where the correct code ranks, per code | analysis/descriptive_by_code.R |
 | descriptive/trend_*.csv | the five trend tables | analysis/trend_tables.R |
-
-## rerank
-
-the two stage reranker, from scripts/reranker/.
-
-| file | what it is | script |
-|---|---|---|
-| candidate_generation_study.csv, chapter_filter_casualties.csv | ways to widen the candidate list, and what the chapter filter drops | analysis/candidate_generation.R |
-| rerank_features_10_9.rds, rerank_features_8_9.rds | candidate pool and features | reranker/features.R |
-| base_emit_*.rds | cache of the original pipeline output, delete to rebuild | reranker/cv_rerank.R |
-| cv_rerank_*.rds, cv_rerank_*.csv | cross validated reranker results | reranker/cv_rerank.R, reranker/merge_cv.R |
-| csv_export/cv_rerank_predictions.csv | the predictions as csv | reranker/export_predictions_csv.R |
-| precision_coverage_*.csv | precision against how much gets mapped, and the review queue | reranker/precision_coverage.R |
 
 ## unmatched
 

@@ -32,14 +32,14 @@ everything from the repo root, or open `icd_crosswalk.Rproj` in rstudio.
 Rscript tests/test_pipeline.R    # quick check the pipeline functions work
 Rscript tests/sanity_check.R     # reproduces the original pipeline's numbers
 Rscript scripts/show_results.R   # every headline number, about a second
-Rscript run_all.R                # rebuild everything, about 45 minutes
-Rscript run_all.R --quick        # ~10 minutes, skips the parameter searches
+Rscript run_all.R                # rebuild everything
+Rscript run_all.R --quick        # skips the full grid search
 ```
 
 each script says at the top what it does, what it reads and what it writes.
 
 r packages: `dplyr`, `tidyr`, `readxl`, `stringr`, `purrr`, `ggplot2`,
-`xgboost`, `stopwords`, `openxlsx`.
+`stopwords`, `openxlsx`.
 
 python is only needed to rebuild the embeddings:
 
@@ -58,7 +58,6 @@ scripts/
   grid/              parameter searches over cutoff, top n and rule
   workbooks/         the workbooks linked above
   no_match/          the codes with no reference match, incl. the 52
-  reranker/          the two stage reranker and its checks
   analysis/          one off analyses
   embeddings/        python that builds the similarity matrices
 tests/               test_pipeline.R and sanity_check.R
@@ -70,6 +69,3 @@ run_all.R            rebuilds it all in dependency order
 scripts call `out_path("name.csv")` and `scripts/paths.R` works out which
 results folder it belongs in from the file name, so the layout and the code
 cannot drift apart.
-
-`data/` is committed, which is why the repo is about 350 mb. that keeps the
-analysis reproducible from a clone without a gpu.

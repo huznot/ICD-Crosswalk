@@ -11,4 +11,3 @@ __pycache__/
 logs/
 notes/
 *.zip
-results/rerank/cv_rerank_checkpoint_*.rds

@@ -120,7 +120,7 @@ for (tr in names(TRACKS)) {
                 nrow(pool_pairs)/n_distinct(pool_pairs$ICD_9_CM),
                 nrow(emitted)/max(n_distinct(emitted$ICD_9_CM),1)))
     cat(sprintf("  ACTUAL  P %.3f R %.3f F1 %.3f\n", actual$precision, actual$recall, actual$f1))
-    cat(sprintf("  ORACLE  P %.3f R %.3f F1 %.3f   <-- ceiling for any reranker on this pool\n",
+    cat(sprintf("  ORACLE  P %.3f R %.3f F1 %.3f   <-- ceiling for this pool\n",
                 oracle$precision, oracle$recall, oracle$f1))
 
     rows[[length(rows)+1]] <- tibble(

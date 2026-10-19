@@ -1,5 +1,5 @@
 # rebuilds everything from the committed data, in dependency order
-# about 45 min on 8 cores. run from the repo root: Rscript run_all.R
+# run from the repo root: Rscript run_all.R, the full grid is the slow part
 # --quick skips the parameter searches
 # embeddings aren't rebuilt here, see scripts/embeddings/run_all_embeddings.sh
 
@@ -25,29 +25,8 @@ if (!QUICK) {
   run("grid/full_grid.R")                    # slowest step, all 12 conditions
   run("grid/assemble_full_grid.R")
   run("analysis/error_analysis.R")
-  run("analysis/candidate_generation.R")
 }
 run("grid/absolute_threshold_grid.R")        # lots of later scripts read this
-
-# reranker
-run("reranker/features.R")
-run("reranker/cv_rerank.R", "10_9")
-run("reranker/cv_rerank.R", "8_9")
-run("reranker/merge_cv.R")
-run("reranker/precision_coverage.R")
-if (!QUICK) {
-  # pass one track at a time
-  for (tr in c("10_9", "8_9")) {
-    run("reranker/ablation.R", tr)
-    run("reranker/retrieval_sensitivity.R", tr)
-    run("reranker/learning_curve.R", tr)
-    run("reranker/category_holdout.R", tr)
-  }
-  run("reranker/portability.R")
-}
-run("reranker/top1_accuracy.R")
-run("reranker/error_by_code_type.R")
-run("reranker/target_blocks.R")
 
 # one off analyses
 run("analysis/variability.R")

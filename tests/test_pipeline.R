@@ -73,7 +73,7 @@ check("precision, recall, f1, accuracy",
       ov$overall_f1_score == 0.4 && ov$overall_accuracy == 0.25)
 
 cat("output folders\n")
-check("tables split by topic", results_subdir("ablation_10_9.csv") == "tables/reranker" &&
+check("tables split by topic", results_subdir("bootstrap_deltas.csv") == "tables/variability" &&
                                results_subdir("trend_x.csv") == "tables/descriptive")
 check("category plots", results_subdir("plot_ccs_f1_distribution.png") == "figures/categories")
 check("workbooks", results_subdir("1_threshold_frequencies.xlsx") == "workbooks")
