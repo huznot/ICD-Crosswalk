@@ -2,26 +2,12 @@
 
 # icd crosswalk
 
-maps old medical diagnosis codes to newer ones automatically.
-
-when a country switches coding systems, decades of health records are stuck in
-the old system. the crosswalk from every old code to its modern equivalent is
-normally built by hand, by clinical coders, over months. this builds on an
-existing pipeline and tests what changes to it are worth making.
+exploring automation of ICD code crosswalking
 
 two migrations:
 
 - icd-9-cm to icd-10-ca, the current canadian standard
 - icd-9-cm to icda-8, going backwards
-
-## how it works
-
-for each old code the pipeline builds two candidate lists, then picks from them:
-
-1. cosine similarity between the code labels, from a sentence embedding model
-2. the codes it most often co-occurs with in administrative records
-3. a rule that combines the two lists
-4. a chapter filter, so a mapping cannot cross clinical areas
 
 ## results
 
@@ -37,20 +23,20 @@ for each old code the pipeline builds two candidate lists, then picks from them:
 [docs/tables.md](docs/tables.md) lists every other table and the script that
 makes it.
 
-best f1 is 0.544 on icd-9 to icd-10-ca and 0.761 on icd-9 to icda-8, against
-0.423 and 0.716 for the original pipeline. those score all 354 icd-9-cm codes,
-including the ones with no match in the target system.
-
 ## running it
 
-needs r. all the data is in the repo, so nothing has to be downloaded. scripts
-find the repo root themselves, so it does not matter where you start them from.
+needs r. all the data is in the repo, so nothing has to be downloaded. run
+everything from the repo root, or open `icd_crosswalk.Rproj` in rstudio.
 
 ```bash
-Rscript scripts/27_show_results.R   # every headline number, about a second
-Rscript run_all.R                   # rebuild everything, about 45 minutes
-Rscript run_all.R --quick           # ~10 minutes, skips the parameter searches
+Rscript tests/test_pipeline.R    # quick check the pipeline functions work
+Rscript tests/sanity_check.R     # reproduces the original pipeline's numbers
+Rscript scripts/show_results.R   # every headline number, about a second
+Rscript run_all.R                # rebuild everything, about 45 minutes
+Rscript run_all.R --quick        # ~10 minutes, skips the parameter searches
 ```
+
+each script says at the top what it does, what it reads and what it writes.
 
 r packages: `dplyr`, `tidyr`, `readxl`, `stringr`, `purrr`, `ggplot2`,
 `xgboost`, `stopwords`, `openxlsx`.
@@ -58,17 +44,27 @@ r packages: `dplyr`, `tidyr`, `readxl`, `stringr`, `purrr`, `ggplot2`,
 python is only needed to rebuild the embeddings:
 
 ```bash
-python scripts/generate_embeddings.py --model sapbert --clean base
+python scripts/embeddings/generate_embeddings.py --model sapbert --clean base
 ```
 
 ## layout
 
 ```
-data/        labels, co-occurrence tables, manual crosswalks, matrices
-scripts/     pipeline code, numbered in the order it was written
-docs/        tables.md, a list of every output
-results/     everything the scripts produce
-run_all.R    rebuilds it all in dependency order
+data/                labels, co-occurrence tables, manual crosswalks, matrices
+scripts/
+  pipeline_lib.R     the four step pipeline, shared by everything
+  paths.R            repo root and where each output goes
+  show_results.R     prints the headline numbers
+  grid/              parameter searches over cutoff, top n and rule
+  workbooks/         the workbooks linked above
+  no_match/          the codes with no reference match, incl. the 52
+  reranker/          the two stage reranker and its checks
+  analysis/          one off analyses
+  embeddings/        python that builds the similarity matrices
+tests/               test_pipeline.R and sanity_check.R
+docs/                tables.md, a list of every output
+results/             everything the scripts produce
+run_all.R            rebuilds it all in dependency order
 ```
 
 scripts call `out_path("name.csv")` and `scripts/paths.R` works out which
@@ -77,10 +73,3 @@ cannot drift apart.
 
 `data/` is committed, which is why the repo is about 350 mb. that keeps the
 analysis reproducible from a clone without a gpu.
-
-## branches
-
-`main` follows the existing four step methodology. `testing` replaces the
-selection step with a wide candidate set and a trained scoring model, reaching
-0.668 and 0.840 on unseen codes. it is kept separate because it departs from the
-agreed methodology.

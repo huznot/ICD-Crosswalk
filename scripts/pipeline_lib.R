@@ -290,7 +290,8 @@ calculate_performance_metrics <- function(final_valid_df) {
 }
 
 run_pipeline_10_9_cached <- function(sheets_dict, cooc_df, manual_df, ccs_df, valid_excluding_df,
-                                      similarity_threshold, top_n, flag_combination) {
+                                      similarity_threshold, top_n, flag_combination,
+                                      drop_unmatched = FALSE) {
   target_col_name <- "ICD_10_CA"
   similarity_df <- get_similarity_scores_from_sheets(sheets_dict, similarity_threshold, target_col_name)
   cooccurrence_df <- get_cooccurrence_codes_from_df(cooc_df, top_n,
@@ -301,13 +302,15 @@ run_pipeline_10_9_cached <- function(sheets_dict, cooc_df, manual_df, ccs_df, va
                                find_icd10ca_chapter, chapter_alignment_10)
   auto_df <- select_rows_by_flags(merged_df, flag_combination)
   final_valid_df <- validate_mapping(manual_df, auto_df, ccs_df, valid_excluding_df,
-                                      manual_target_col = "ICD-10-CA", target_col_name = target_col_name)
+                                      manual_target_col = "ICD-10-CA", target_col_name = target_col_name,
+                                      drop_unmatched = drop_unmatched)
   metrics <- calculate_performance_metrics(final_valid_df)
   list(grouped = metrics$grouped, overall = metrics$overall, final_valid_df = final_valid_df, auto_df = auto_df)
 }
 
 run_pipeline_8_9_cached <- function(sheets_dict, cooc_df, manual_df, ccs_df, valid_excluding_df,
-                                     similarity_threshold, top_n, flag_combination) {
+                                     similarity_threshold, top_n, flag_combination,
+                                     drop_unmatched = FALSE) {
   target_col_name <- "ICDA_8"
   similarity_df <- get_similarity_scores_from_sheets(sheets_dict, similarity_threshold, target_col_name)
   cooccurrence_df <- get_cooccurrence_codes_from_df(cooc_df, top_n,
@@ -318,7 +321,8 @@ run_pipeline_8_9_cached <- function(sheets_dict, cooc_df, manual_df, ccs_df, val
                                find_icda8_chapter, chapter_alignment_8)
   auto_df <- select_rows_by_flags(merged_df, flag_combination)
   final_valid_df <- validate_mapping(manual_df, auto_df, ccs_df, valid_excluding_df,
-                                      manual_target_col = "ICDA-8", target_col_name = target_col_name)
+                                      manual_target_col = "ICDA-8", target_col_name = target_col_name,
+                                      drop_unmatched = drop_unmatched)
   metrics <- calculate_performance_metrics(final_valid_df)
   list(grouped = metrics$grouped, overall = metrics$overall, final_valid_df = final_valid_df, auto_df = auto_df)
 }
@@ -452,7 +456,8 @@ run_pipeline_10_9_reverse_cached <- function(sheets_dict, cooc_df, manual_df, cc
                                        find_icd10ca_chapter, chapter_alignment_10_rev)
   auto_df <- select_rows_by_flags(merged_df, flag_combination)
   final_valid_df <- validate_mapping_reverse(manual_df, auto_df, ccs_df, valid_excluding_df,
-                                              manual_target_col = "ICD-10-CA", target_col_name = target_col_name)
+                                              manual_target_col = "ICD-10-CA", target_col_name = target_col_name,
+                                      drop_unmatched = drop_unmatched)
   metrics <- calculate_performance_metrics(final_valid_df)
   list(grouped = metrics$grouped, overall = metrics$overall, final_valid_df = final_valid_df, auto_df = auto_df)
 }
@@ -469,7 +474,8 @@ run_pipeline_8_9_reverse_cached <- function(sheets_dict, cooc_df, manual_df, ccs
                                        find_icda8_chapter, chapter_alignment_8_rev)
   auto_df <- select_rows_by_flags(merged_df, flag_combination)
   final_valid_df <- validate_mapping_reverse(manual_df, auto_df, ccs_df, valid_excluding_df,
-                                              manual_target_col = "ICDA-8", target_col_name = target_col_name)
+                                              manual_target_col = "ICDA-8", target_col_name = target_col_name,
+                                      drop_unmatched = drop_unmatched)
   metrics <- calculate_performance_metrics(final_valid_df)
   list(grouped = metrics$grouped, overall = metrics$overall, final_valid_df = final_valid_df, auto_df = auto_df)
 }

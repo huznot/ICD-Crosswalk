@@ -1,9 +1,9 @@
 # rebuilds everything from the committed data, in dependency order
-# about 45 min on 8 cores. run from anywhere: Rscript run_all.R
+# about 45 min on 8 cores. run from the repo root: Rscript run_all.R
 # --quick skips the parameter searches
-# embeddings aren't rebuilt here, see scripts/run_all_embeddings.sh
+# embeddings aren't rebuilt here, see scripts/embeddings/run_all_embeddings.sh
 
-source(if (file.exists("scripts/paths.R")) "scripts/paths.R" else "paths.R")
+source("scripts/paths.R")
 
 QUICK <- "--quick" %in% commandArgs(trailingOnly = TRUE)
 
@@ -18,64 +18,65 @@ run <- function(script, args = character()) {
   cat(sprintf("----- %s done in %.1f min\n", script, mins))
 }
 
+run("../tests/test_pipeline.R")
+
 # four step pipeline, full grid
 if (!QUICK) {
-  run("07_full_grid_comparison.R")   # slowest step, all 12 conditions
-  run("08_assemble_full_grid.R")     # summary tables and the f1 range plot
-  run("09_error_analysis.R")         # where correct pairs are lost
-  run("10_candidate_generation_study.R")
+  run("grid/full_grid.R")                    # slowest step, all 12 conditions
+  run("grid/assemble_full_grid.R")
+  run("analysis/error_analysis.R")
+  run("analysis/candidate_generation.R")
 }
+run("grid/absolute_threshold_grid.R")        # lots of later scripts read this
 
-run("11_rerank_features.R")          # candidate pool + features
-run("12_cv_rerank.R", "10_9")
-run("12_cv_rerank.R", "8_9")
-run("12b_merge_cv_results.R")
-run("13_precision_coverage.R")       # confidence thresholds and triage
-
-# needs the cv predictions
-run("30_variability.R")              # bootstrap sd
-run("31_category_breakdown.R")       # all 130 ccs categories
-
-# pass one track at a time
+# reranker
+run("reranker/features.R")
+run("reranker/cv_rerank.R", "10_9")
+run("reranker/cv_rerank.R", "8_9")
+run("reranker/merge_cv.R")
+run("reranker/precision_coverage.R")
 if (!QUICK) {
+  # pass one track at a time
   for (tr in c("10_9", "8_9")) {
-    run("16_ablation.R", tr)
-    run("17_retrieval_sensitivity.R", tr)
-    run("18_learning_curve.R", tr)
-    run("19_category_holdout.R", tr)
+    run("reranker/ablation.R", tr)
+    run("reranker/retrieval_sensitivity.R", tr)
+    run("reranker/learning_curve.R", tr)
+    run("reranker/category_holdout.R", tr)
   }
-  run("23_code_prefix_test.R")
-  run("29_portability.R")
+  run("reranker/portability.R")
 }
+run("reranker/top1_accuracy.R")
+run("reranker/error_by_code_type.R")
+run("reranker/target_blocks.R")
 
-# reporting only
-run("20_top1_accuracy.R")
-run("21_error_by_code_type.R")
-run("22_target_block_structure.R")
-run("25_frequency_distributions.R")
-run("26_stopword_choice.R")
-run("28_stopwords_and_codes.R")
-run("35_unmatched_codes.R")          # codes with no correct answer
-run("36_unmatched_descriptives.R")   # those codes described on their own
-run("37_unmatched_handout.R")        # standalone html of the same thing
-run("27_show_results.R")             # every headline number
+# one off analyses
+run("analysis/variability.R")
+run("analysis/category_breakdown.R")
+if (!QUICK) run("analysis/code_prefix_test.R")
+run("analysis/frequency_distributions.R")
+run("analysis/stopword_choice.R")
+run("analysis/stopwords_and_codes.R")
+run("analysis/identical_labels.R")
+run("analysis/descriptive_by_code.R")        # trend_tables.R reads this
+run("analysis/trend_tables.R")
 
+# codes with no reference match
+# nine_codes_review.R skipped on purpose, it wipes hand formatting
+run("no_match/unmatched_codes.R")
+run("no_match/unmatched_descriptives.R")
+run("no_match/unmatched_handout.R")
+run("no_match/e13_d48_review.R")
+run("no_match/icda8_52_list.R")
+run("no_match/icda8_52_scores.R")
+run("no_match/icda8_52_review.R")
 
-# 44_ skipped on purpose, use 47_
-run("41_identical_labels.R")          # proof the code prefix broke the similarity
-run("45_absolute_threshold_grid.R")   # absolute cutoff against the relative one
-run("43_e13_d48_review.R")            # per code look at 249 and 239
+# workbooks linked from the readme
+run("workbooks/threshold_frequencies.R")
+run("workbooks/icda8_code_in_label.R")
+run("workbooks/similarity_gap.R")
+run("workbooks/category_counts.R")
+run("workbooks/clinicalbert_vs_sapbert.R")
 
-# order matters: 50_ before 51_, 45_ first
-run("50_descriptive_by_code.R")       # where the correct code ranks, per code
-run("51_analysis_tables.R")           # the five trend tables
-run("52_icda8_excluded_list.R")       # 52 no-match codes described
-run("53_threshold_frequencies.R")     # counts behind each cutoff, not summaries
-run("54_icda8_code_in_label.R")       # code in the label on the icda-8 track
-run("55_median_similarity_gap.R")     # why sapberts median sits so much lower
-run("56_category_counts.R")           # 130 ccs categories, plain cutoffs
-run("57_clinicalbert_vs_sapbert.R")   # head to head, same settings both
-run("58_icda8_excluded_effect.R")     # 52 no-match codes, full grid
-run("59_icda8_excluded_review.R")     # 52 review workbook
+run("show_results.R")
 
 cat("\nall done. results/ is rebuilt.\n")
