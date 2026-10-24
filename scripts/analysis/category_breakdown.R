@@ -1,4 +1,5 @@
-# f1 over all 130 ccs categories, per model
+# f1 for each of the 130 ccs categories, per model
+# both tracks: icd-9 to icd-10-ca and icd-9 to icda-8
 # 59 categories hold one code, so their f1 is noisy
 # writes ccs_*.csv and the per category plots
 

@@ -1,4 +1,5 @@
-# how max similarity and top co-occurrence are spread
+# how the top cosine score and top co-occurrence count are spread
+# both tracks: icd-9 to icd-10-ca and icd-9 to icda-8
 # writes freq_dist_*.csv and two plots
 
 source("scripts/paths.R")

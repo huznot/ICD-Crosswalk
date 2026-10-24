@@ -1,4 +1,5 @@
 # which stopword list to use when cleaning labels
+# looks at the label files for both tracks
 # prints what each list deletes and which labels it breaks
 
 source("scripts/paths.R")

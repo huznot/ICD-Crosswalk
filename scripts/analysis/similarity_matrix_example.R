@@ -1,4 +1,5 @@
 # what a similarity matrix looks like, with a small heatmap
+# icd-9 to icd-10-ca only
 # writes similarity_matrix_example.csv and plot_similarity_matrix_example.png
 
 source("scripts/paths.R")

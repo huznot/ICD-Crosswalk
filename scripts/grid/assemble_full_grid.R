@@ -1,4 +1,5 @@
-# combines the grid/full_grid.R grids into summary tables
+# combines the grid/full_grid.R output into summary tables
+# both tracks: icd-9 to icd-10-ca and icd-9 to icda-8
 # writes full_grid_*.csv and plot_f1_accuracy_comparison.png
 
 source("scripts/paths.R")

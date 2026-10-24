@@ -1,5 +1,6 @@
-# where the original pipeline loses correct pairs
-# similarity cutoff vs co-occurrence vs flag rule, plus the oracle f1 ceiling
+# where the four step pipeline loses correct pairs
+# both tracks: icd-9 to icd-10-ca and icd-9 to icda-8
+# cutoff vs co-occurrence vs rule, plus the best f1 possible from what's left
 # writes error_analysis_summary.csv and error_analysis_losses.csv
 
 source("scripts/paths.R")

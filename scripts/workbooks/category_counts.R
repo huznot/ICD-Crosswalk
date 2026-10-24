@@ -1,4 +1,5 @@
-# per ccs category counts at the plain cutoffs, icd-9 to icd-10-ca
+# counts per ccs category at the fixed cutoffs
+# icd-9 to icd-10-ca only
 # most categories are tiny, so code counts stay in every sheet
 # writes workbooks/4_counts_by_ccs_category.xlsx
 

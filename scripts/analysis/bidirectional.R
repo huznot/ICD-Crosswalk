@@ -1,4 +1,5 @@
-# reverse mapping (target -> icd-9-cm) and round trip check
+# runs the pipeline backwards (target -> icd-9-cm) and checks the round trip
+# both tracks: icd-9 to icd-10-ca and icd-9 to icda-8
 # reuses the forward settings from best_by_model.csv
 # writes bidirectional_roundtrip.csv
 

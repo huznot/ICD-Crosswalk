@@ -1,4 +1,5 @@
-# standalone html handout of the unmatched code descriptives
+# standalone html handout of the no-match code descriptives
+# both tracks: the 9 with no icd-10-ca match and the 52 with no icda-8 match
 # reads the no_match/unmatched_codes.R and no_match/unmatched_descriptives.R csvs, run those first
 # the html is one single quoted string, escape apostrophes
 # writes results/unmatched/unmatched_codes_handout.html, for the pdf:

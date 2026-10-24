@@ -1,4 +1,5 @@
-# first clinicalbert vs sapbert comparison, original matrices
+# first clinicalbert vs sapbert comparison, on the original matrices
+# both tracks: icd-9 to icd-10-ca and icd-9 to icda-8
 # writes grid_results_*.csv, best_by_model.csv, ccs_breakdown_*.csv
 
 source("scripts/paths.R")

@@ -1,5 +1,5 @@
 # raw counts behind each cutoff, from absolute_threshold_grid.csv
-# nothing recomputed
+# icd-9 to icd-10-ca only, nothing recomputed
 # writes workbooks/1_threshold_frequencies.xlsx
 
 source("scripts/paths.R")

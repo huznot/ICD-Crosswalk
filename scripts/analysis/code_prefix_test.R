@@ -1,5 +1,5 @@
-# does the code number in the embedding text help or hurt
-# pool recall at a few top k values plus top-1 hits
+# does putting the code number in front of the label help or hurt
+# both tracks: icd-9 to icd-10-ca and icd-9 to icda-8
 # writes code_prefix_test.csv
 
 source("scripts/paths.R")

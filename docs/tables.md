@@ -1,30 +1,33 @@
 # tables
 
-glossary for everything in results/
+every file in results/, what it is, and the script that makes it. `10_9` in a
+file name means icd-9 to icd-10-ca and `8_9` means icd-9 to icda-8. see
+[terms.md](terms.md) for what the words mean.
 
 ## workbooks
 
 | file | what it is | script |
 |---|---|---|
-| head_to_head/clinicalbert_vs_sapbert.xlsx | both models on the same top n and rule, overall and by ccs category | workbooks/clinicalbert_vs_sapbert.R |
-| workbooks/1_threshold_frequencies.xlsx | how many pairs each cutoff keeps, with tp, fp and fn | workbooks/threshold_frequencies.R |
-| workbooks/2_icda8_code_in_label.xlsx | code number in the label or not, on the icda-8 track | workbooks/icda8_code_in_label.R |
-| workbooks/3_similarity_gap_by_model.xlsx | similarity of correct pairs against everything else, per model | workbooks/similarity_gap.R |
-| workbooks/4_counts_by_ccs_category.xlsx | counts for all 130 ccs categories at the plain cutoffs | workbooks/category_counts.R |
-| review/52_codes_review.xlsx | the 52 icd-9 codes with no icda-8 match, by chapter, and scores at every cutoff crossed with every top n | no_match/icda8_52_review.R |
-| review/52_codes_no_icda8.xlsx | the same 52 with their co-occurrence, 59 reads it | no_match/icda8_52_list.R |
-| review/9_codes_review_UPDATED.xlsx | the 9 icd-9 codes with no icd-10-ca match | no_match/nine_codes_review.R, notes fixed by no_match/nine_codes_notes.R |
-| review/e13_d48_review.xlsx | per code look at 249 and 239 | no_match/e13_d48_review.R |
+| head_to_head/clinicalbert_vs_sapbert.xlsx | icd-9 to icd-10-ca. both models on the same top n and rule, overall and by ccs category | workbooks/clinicalbert_vs_sapbert.R |
+| workbooks/1_threshold_frequencies.xlsx | icd-9 to icd-10-ca. how many pairs each cutoff keeps, with tp, fp and fn | workbooks/threshold_frequencies.R |
+| workbooks/2_icda8_code_in_label.xlsx | icd-9 to icda-8. code number in the label or not | workbooks/icda8_code_in_label.R |
+| workbooks/3_similarity_gap_by_model.xlsx | icd-9 to icd-10-ca. similarity of correct pairs against everything else, per model | workbooks/similarity_gap.R |
+| workbooks/4_counts_by_ccs_category.xlsx | icd-9 to icd-10-ca. counts for all 130 ccs categories at the fixed cutoffs | workbooks/category_counts.R |
+| review/52_codes_review.xlsx | icd-9 to icda-8. the 52 icd-9 codes with no icda-8 code, by chapter, and the scores with them included at every cutoff and top n | no_match/icda8_52_review.R |
+| review/52_codes_no_icda8.xlsx | icd-9 to icda-8. the same 52 with what they co-occur with | no_match/icda8_52_list.R |
+| review/9_codes_review_UPDATED.xlsx | icd-9 to icd-10-ca. the 9 icd-9 codes with no icd-10-ca code | no_match/nine_codes_review.R, notes fixed by no_match/nine_codes_notes.R |
+| review/e13_d48_review.xlsx | icd-9 to icd-10-ca. a look at icd-9 249 and 239, two of the 9 | no_match/e13_d48_review.R |
 
-44 rebuilds the 9 code workbook from scratch and loses the hand formatting, so
-it is not in run_all.R. change wording with 47 instead.
+no_match/nine_codes_review.R rebuilds the 9 code workbook from scratch and loses
+the hand formatting, so it is not in run_all.R. change wording with
+no_match/nine_codes_notes.R instead.
 
 ## review
 
 | file | what it is | script |
 |---|---|---|
-| 52_codes_accuracy_effect.csv | the grid behind the last tab of the 52 review | no_match/icda8_52_scores.R |
-| absolute_threshold_grid.csv | absolute cosine cutoff against the relative one, every setting | grid/absolute_threshold_grid.R |
+| 52_codes_accuracy_effect.csv | icd-9 to icda-8. the scores behind the last tab of the 52 review | no_match/icda8_52_scores.R |
+| absolute_threshold_grid.csv | icd-9 to icd-10-ca. fixed cosine cutoff against the relative one, every setting | grid/absolute_threshold_grid.R |
 | identical_labels.png | icd-9 and icd-10-ca codes with the exact same label, scored with and without the code number in the text | analysis/identical_labels.R |
 
 ## grid

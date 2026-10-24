@@ -1,7 +1,8 @@
-# full grid for every embedding condition
-# thresholds x top n x rules 1-4, one csv per condition in results/grid/conditions/
+# every cutoff x top n x rule, for every embedding model and text cleaning
+# both tracks: icd-9 to icd-10-ca and icd-9 to icda-8
+# uses the relative cutoff, a share of each code's best score
+# one csv per condition in results/grid/conditions/, grid/assemble_full_grid.R combines them
 # usage: Rscript scripts/grid/full_grid.R [tag ...]   (no tag = all)
-# grid/assemble_full_grid.R combines the outputs
 
 source("scripts/paths.R")
 source("scripts/pipeline_lib.R")

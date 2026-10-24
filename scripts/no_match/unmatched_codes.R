@@ -1,4 +1,5 @@
-# what the pipeline does with icd-9 codes that have no correct answer
+# what the pipeline outputs for icd-9 codes with no correct answer
+# both tracks: the 9 with no icd-10-ca match and the 52 with no icda-8 match
 # counts mapped vs silent, for codes with and without an answer
 # writes unmatched_code_handling.csv and its plot
 

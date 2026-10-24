@@ -1,4 +1,5 @@
 # does the code number in the label matter on icd-9 to icda-8
+# icd-9 to icd-10-ca is run alongside for comparison
 # grid comparison from results/grid/conditions/, best settings rerun for counts
 # writes workbooks/2_icda8_code_in_label.xlsx
 

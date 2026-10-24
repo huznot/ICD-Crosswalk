@@ -1,4 +1,5 @@
-# charts for the grid/first_comparison.R comparison
+# charts for grid/first_comparison.R
+# both tracks: icd-9 to icd-10-ca and icd-9 to icda-8
 # writes plot_f1_accuracy_comparison.png, plot_ccs_breakdown_*.png, regression_summary.csv
 
 source("scripts/paths.R")

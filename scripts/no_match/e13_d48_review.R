@@ -1,4 +1,5 @@
-# per code look at icd-9 249 and 239 (e13 and d48 on the icd-10-ca side)
+# looks at icd-9 249 and 239, two of the 9 codes with no icd-10-ca match
+# icd-9 to icd-10-ca only
 # writes e13_d48_review.xlsx
 
 source("scripts/paths.R")

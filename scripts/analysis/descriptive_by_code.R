@@ -1,4 +1,5 @@
-# where the correct icd-10-ca code ranks, per model, per icd-9 code
+# where the correct code ranks for each model, one row per icd-9 code
+# icd-9 to icd-10-ca only
 # writes per_code_rank.csv, analysis/trend_tables.R reads it
 
 source("scripts/paths.R")

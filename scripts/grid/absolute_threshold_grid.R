@@ -1,4 +1,5 @@
-# absolute cosine cutoff vs the relative one, full grid
+# fixed cosine cutoff (e.g. 0.90) vs the relative one (0.99 x the code's best)
+# icd-9 to icd-10-ca only
 # writes absolute_threshold_grid.csv, lots of later scripts read it
 
 source("scripts/paths.R")

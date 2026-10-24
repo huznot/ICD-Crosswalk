@@ -1,4 +1,6 @@
-# the 52 icd-9 codes with no icda-8 match, with chapter and co-occurrence
+# lists the 52 icd-9 codes the validation data says have no icda-8 match
+# icd-9 to icda-8 only
+# adds the chapter and what each code co-occurs with
 # writes 52_codes_no_icda8.xlsx, no_match/icda8_52_review.R reads it
 
 source("scripts/paths.R")

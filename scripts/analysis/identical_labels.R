@@ -1,5 +1,6 @@
-# icd-9 / icd-10-ca pairs with identical labels, with and without the code number
-# shows the code prefix broke the similarity scores
+# icd-9 / icd-10-ca pairs with word for word identical labels
+# icd-9 to icd-10-ca only
+# shows putting the code number in the label broke the scores
 # writes identical_labels.png
 
 source("scripts/paths.R")

@@ -1,4 +1,5 @@
 # exports the validation data as csv with labels and chapters
+# both tracks: icd-9 to icd-10-ca and icd-9 to icda-8
 # plus a review sheet for the codes with no match
 # writes validation_pairs_*.csv and unmatched_review_*.csv
 

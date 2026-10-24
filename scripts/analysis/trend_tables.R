@@ -1,4 +1,5 @@
 # the five trend tables
+# icd-9 to icd-10-ca only
 # reads per_code_rank.csv and absolute_threshold_grid.csv, writes trend_*.csv
 
 source("scripts/paths.R")

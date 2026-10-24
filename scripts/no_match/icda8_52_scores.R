@@ -1,5 +1,7 @@
-# icd-9 to icda-8 scores with all 52 no-match codes kept in
-# every cutoff x top n x rule, both models
+# icd-9 to icda-8 scores with the 52 no-match codes included
+# included means they stay in the scoring, so any mapping the pipeline
+# makes for one of them counts as a false positive
+# every cutoff x top n x rule, clinicalbert and sapbert
 # writes 52_codes_accuracy_effect.csv, no_match/icda8_52_review.R reads it
 
 source("scripts/paths.R")

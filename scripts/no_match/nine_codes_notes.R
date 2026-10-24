@@ -1,4 +1,5 @@
 # rewrites notes in the 9 codes workbook in place
+# the 9 = icd-9 codes the validation data says have no icd-10-ca match
 # keeps the hand formatting no_match/nine_codes_review.R would wipe
 
 source("scripts/paths.R")

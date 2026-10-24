@@ -11,17 +11,20 @@ two migrations:
 
 ## results
 
-| | |
-|---|---|
-| [clinicalbert vs sapbert](results/head_to_head/clinicalbert_vs_sapbert.xlsx) | both models on the same settings, overall and by category |
-| [counts at each cutoff](results/workbooks/1_threshold_frequencies.xlsx) | how many pairs each cutoff keeps, with true and false positives |
-| [code number in the label](results/workbooks/2_icda8_code_in_label.xlsx) | whether embedding the code number with the label matters |
-| [why sapbert scores lower](results/workbooks/3_similarity_gap_by_model.xlsx) | correct pairs against everything else, per model |
-| [all 130 ccs categories](results/workbooks/4_counts_by_ccs_category.xlsx) | counts per category |
-| [the 52 with no icda-8 match](results/review/52_codes_review.xlsx) | the review of those codes, and every cutoff crossed with every top n from 5 to 30 |
+| | track | |
+|---|---|---|
+| [clinicalbert vs sapbert](results/head_to_head/clinicalbert_vs_sapbert.xlsx) | icd-9 to icd-10-ca | both models on the same settings, overall and by category |
+| [counts at each cutoff](results/workbooks/1_threshold_frequencies.xlsx) | icd-9 to icd-10-ca | how many pairs each cutoff keeps, with true and false positives |
+| [code number in the label](results/workbooks/2_icda8_code_in_label.xlsx) | icd-9 to icda-8 | whether embedding the code number with the label matters |
+| [why sapbert scores lower](results/workbooks/3_similarity_gap_by_model.xlsx) | icd-9 to icd-10-ca | correct pairs against everything else, per model |
+| [all 130 ccs categories](results/workbooks/4_counts_by_ccs_category.xlsx) | icd-9 to icd-10-ca | counts per category |
+| [the 52 with no icda-8 match](results/review/52_codes_review.xlsx) | icd-9 to icda-8 | the 52 icd-9 codes the validation data says have no icda-8 code, and the scores with them kept in, at every cutoff and top n from 5 to 30 |
 
-[docs/tables.md](docs/tables.md) lists every other table and the script that
-makes it.
+in the docs folder:
+
+- [terms.md](docs/terms.md): what the tracks, the 9 and the 52, cutoffs, top n and rules mean
+- [models.md](docs/models.md): why clinicalbert, sapbert and mpnet, with sources
+- [tables.md](docs/tables.md): every other table and the script that makes it
 
 ## running it
 
@@ -57,11 +60,12 @@ scripts/
   show_results.R     prints the headline numbers
   grid/              parameter searches over cutoff, top n and rule
   workbooks/         the workbooks linked above
-  no_match/          the codes with no reference match, incl. the 52
+  no_match/          icd-9 codes with no correct answer in the validation data:
+                     9 with no icd-10-ca code, 52 with no icda-8 code
   analysis/          one off analyses
   embeddings/        python that builds the similarity matrices
 tests/               test_pipeline.R and sanity_check.R
-docs/                tables.md, a list of every output
+docs/                terms, model choice with sources, list of every output
 results/             everything the scripts produce
 run_all.R            rebuilds it all in dependency order
 ```

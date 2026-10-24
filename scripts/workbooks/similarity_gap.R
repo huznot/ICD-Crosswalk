@@ -1,4 +1,5 @@
-# why sapbert's median similarity sits lower than clinicalbert's
+# why sapbert's cosine scores sit lower than clinicalbert's
+# icd-9 to icd-10-ca only
 # correct pairs vs everything else, per model
 # writes workbooks/3_similarity_gap_by_model.xlsx
 

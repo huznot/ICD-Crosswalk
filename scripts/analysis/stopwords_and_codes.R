@@ -1,5 +1,6 @@
 # stop words in/out x code number in/out, clinicalbert only
-# reads the cached grids, nothing is rerun
+# both tracks: icd-9 to icd-10-ca and icd-9 to icda-8
+# reads the saved grids, nothing is rerun
 # writes plot_stopwords_codes.png
 
 source("scripts/paths.R")

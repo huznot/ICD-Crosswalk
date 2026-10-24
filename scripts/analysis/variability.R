@@ -1,5 +1,6 @@
-# how much the numbers move on a different set of codes
-# cluster bootstrap over icd-9 codes
+# how much the f1 scores would move on a different set of codes
+# both tracks: icd-9 to icd-10-ca and icd-9 to icda-8
+# bootstrap that resamples whole icd-9 codes
 # writes bootstrap_*.csv
 
 source("scripts/paths.R")

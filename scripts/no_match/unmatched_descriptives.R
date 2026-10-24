@@ -1,5 +1,6 @@
 # cosine similarity and co-occurrence for the codes with no match
-# codes with a match are the comparison group
+# both tracks: the 9 with no icd-10-ca match and the 52 with no icda-8 match
+# codes that do have a match are the comparison group
 # writes unmatched_*_by_code.csv, unmatched_descriptives_summary.csv and plots
 
 source("scripts/paths.R")

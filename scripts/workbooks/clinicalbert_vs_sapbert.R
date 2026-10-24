@@ -1,4 +1,5 @@
 # clinicalbert vs sapbert on the same top n and rule
+# icd-9 to icd-10-ca only
 # only the cosine cutoff differs, set from each model's score distribution
 # writes head_to_head/clinicalbert_vs_sapbert.xlsx
 

@@ -1,4 +1,5 @@
-# builds the 9 codes review workbook from scratch
+# builds the review workbook for the 9 icd-9 codes with no icd-10-ca match
+# icd-9 to icd-10-ca only
 # not in run_all.R, it wipes the hand formatting. use no_match/nine_codes_notes.R for wording
 
 source("scripts/paths.R")

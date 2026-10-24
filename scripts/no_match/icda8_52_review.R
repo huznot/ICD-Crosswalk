@@ -1,5 +1,6 @@
-# review workbook for the 52 codes with no icda-8 match
-# reads 52_codes_no_icda8.xlsx (no_match/icda8_52_list.R) and 52_codes_accuracy_effect.csv (no_match/icda8_52_scores.R)
+# review workbook for the 52 icd-9 codes with no icda-8 match
+# icd-9 to icda-8 only
+# reads 52_codes_no_icda8.xlsx and 52_codes_accuracy_effect.csv
 # writes review/52_codes_review.xlsx
 
 source("scripts/paths.R")
