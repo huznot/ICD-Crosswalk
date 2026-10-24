@@ -25,9 +25,9 @@ the 52 are icd-9 codes the validation data says have no icda-8 code (the 9 are
 the same for icd-10-ca). keeping them in the scoring means any mapping the
 pipeline makes for one of them counts as a false positive.
 
-[docs/models.md](docs/models.md) has notes on why we looked at sapbert and mpnet
-instead of clinicalbert, with sources. [docs/tables.md](docs/tables.md) lists
-every other table and the script that makes it.
+[docs/models/](docs/models) has the literature notes on clinicalbert, sapbert
+and mpnet with sources, and what we got with each. [docs/tables.md](docs/tables.md)
+lists every other table and the script that makes it.
 
 ## running it
 
@@ -68,7 +68,7 @@ scripts/
   analysis/          one off analyses
   embeddings/        python that builds the similarity matrices
 tests/               test_pipeline.R and sanity_check.R
-docs/                model notes with sources, list of every output
+docs/                literature notes on the models, list of every output
 results/             everything the scripts produce
 run_all.R            rebuilds it all in dependency order
 ```
