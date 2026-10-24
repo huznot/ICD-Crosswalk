@@ -1,135 +1,72 @@
-# models
+# model notes
 
-notes on the three embedding models we tried, why each one was considered,
-and what happened. sources are at the bottom, numbered like [1].
+notes on why we looked at models other than clinicalbert. sources at the bottom.
 
-## the job the model has to do
+the labels we embed are short medical names like "diabetes mellitus". we
+compare them with cosine similarity, so we need a model that puts two names for
+the same condition close together. that's more like matching medical concept
+names than reading clinical notes, which is why clinicalbert wasn't a great
+fit.
 
-each code label is a short medical name, like "diabetes mellitus" or
-"malignant neoplasm of breast". the model turns each label into a vector, and
-we compare vectors with cosine similarity. a good model puts two labels for
-the same condition close together and unrelated ones far apart.
+clinicalbert (emilyalsentzer/Bio_ClinicalBERT) is what the original pipeline
+used. it starts from biobert and was trained further on the mimic-iii icu notes,
+about 880 million words [1, 2, 3, 4]. it learned by filling in hidden words, it
+was never trained to put similar meanings close together. the sentence-bert
+paper says plain bert vectors like this give "rather bad sentence embeddings,
+often worse than averaging glove embeddings" [5]. bert vectors also tend to all
+point in similar directions, so unrelated text still scores high [6]. we saw
+this on icd-9 to icd-10-ca: correct pairs had a median score of 0.916 and every
+other pair 0.841, only 0.075 apart. at its best cutoff (0.90) 78,236 wrong
+pairs still got through.
 
-that's closer to matching medical concept names (what papers call entity
-linking) than to understanding clinical notes. that difference is the main
-reason we looked past clinicalbert.
+sapbert (cambridgeltl/SapBERT-from-PubMedBERT-fulltext) starts from pubmedbert,
+which was trained on pubmed articles [9]. then it was trained on umls 2020AA so
+different names for the same medical concept end up close together [7, 8, 10].
+umls combines over 100 medical vocabularies, including icd-9-cm and icd-10-cm
+[11]. the paper got state of the art results on six medical entity linking
+benchmarks [7], which is basically our task. its scores spread out a lot more:
+correct pairs median 0.654, everything else 0.220, a gap of 0.434. at its best
+cutoff (0.60) only 1,675 wrong pairs got through. that's why its scores look
+lower than clinicalbert's, it pushes unrelated pairs further apart.
 
-## clinicalbert (what the original pipeline used)
+mpnet (sentence-transformers/all-mpnet-base-v2) has no medical training. it was
+trained on about 1.17 billion general sentence pairs to put similar sentences
+close together [12, 13]. we tried it to see if the medical training matters or
+if being trained for similarity is enough. it was dropped from later work.
 
-- model: `emilyalsentzer/Bio_ClinicalBERT` [1, 2]
-- starts from biobert [3], which was trained on pubmed and pmc articles, then
-  trained further on every note in mimic-iii [4], about 880 million words of
-  icu notes [2]
-- it's trained to fill in hidden words in notes. it was never trained to put
-  similar meanings close together
-- we take the [CLS] vector from the last layer
-- the sentence-bert paper says this kind of plain bert vector "yields rather
-  bad sentence embeddings, often worse than averaging glove embeddings" [5]
+for both clinicalbert and sapbert we use the [CLS] vector from the last layer,
+which is what the sapbert model card says to do [8]. mpnet uses the average of
+all the token vectors, which is how it was trained [12].
 
-what we saw (icd-9 to icd-10-ca, `results/workbooks/3_similarity_gap_by_model.xlsx`):
+best f1 from the full grid, same grid for every model (results/grid/full_grid_best.csv):
+icd-9 to icd-10-ca: sapbert 0.552, mpnet 0.540, clinicalbert 0.478 (0.423 with
+the original matrices).
+icd-9 to icda-8: sapbert 0.761, mpnet 0.741, clinicalbert 0.722 (0.716 original).
 
-- every score sits high. correct pairs have a median of 0.916 and every other
-  pair 0.841, a gap of only 0.075
-- at its best fixed cutoff (0.90), 78,236 wrong pairs still get through, about
-  11% of all the non-matching pairs. the cutoff can't separate right from wrong
-  very well
-- this fits a known property of bert vectors: they aren't spread evenly in
-  every direction (they're anisotropic), so unrelated texts can still score
-  high [6]
+head to head on icd-9 to icd-10-ca, same top n and rule 4 for both
+(results/head_to_head/clinicalbert_vs_sapbert.xlsx): sapbert f1 0.544 at cutoff
+0.60, clinicalbert 0.439 at cutoff 0.95.
 
-## sapbert
+bootstrap, 2000 draws over icd-9 codes (results/tables/variability/bootstrap_deltas.csv):
+sapbert beats the original clinicalbert by 0.101 f1 on icd-9 to icd-10-ca
+(95% range 0.079 to 0.123) and by 0.046 on icd-9 to icda-8 (-0.002 to 0.095,
+so just touching zero, sapbert ahead in 97% of draws). mpnet minus sapbert is
++0.003 on icd-9 to icd-10-ca (-0.016 to 0.022) and -0.021 on icd-9 to icda-8
+(-0.066 to 0.023), so those two are basically tied.
 
-- model: `cambridgeltl/SapBERT-from-PubMedBERT-fulltext` [7, 8]
-- starts from pubmedbert [9], which was trained from scratch on pubmed
-  abstracts and full text articles
-- then trained on umls 2020AA [8, 10] so that different names for the same
-  medical concept end up close together. umls brings together over 100 medical
-  vocabularies [11], including icd-9-cm and icd-10-cm
-- built for this kind of task: the paper reports state of the art results on
-  six medical entity linking benchmarks [7]
-- we take the [CLS] vector from the last layer, as the model card says [8]
+things a reviewer might ask about:
+- mpnet ties sapbert on icd-9 to icd-10-ca, so the gain is mostly from being
+  trained for similarity. the argument for sapbert is that its training is
+  medical and matches what we're doing, not that it scored higher
+- the icda-8 lead over clinicalbert isn't certain
+- umls has icd-9-cm and icd-10-cm, so sapbert may have seen some of these
+  labels in training
+- umls has icd-10-cm (us), not icd-10-ca. both come from the who icd-10 so most
+  three character codes match, but not all
+- putting the code number in the label ("250 diabetes mellitus") made every
+  model worse, so the newer work leaves it out (results/review/identical_labels.png)
 
-what we saw:
-
-- the scores spread out. correct pairs median 0.654, every other pair 0.220,
-  a gap of 0.434 (clinicalbert's was 0.075)
-- at its best fixed cutoff (0.60) only 1,675 wrong pairs get through, 0.23%
-- this is why sapbert's scores look lower overall. it isn't worse at reading
-  medical terms, it pushes unrelated pairs much further apart
-
-## mpnet
-
-- model: `sentence-transformers/all-mpnet-base-v2` [12]
-- general purpose, no medical training. it's mpnet [13] trained on about 1.17
-  billion sentence pairs (reddit, stack exchange, wikianswers, ms marco and
-  others) to put similar sentences close together [12]
-- uses the average of all token vectors (mean pooling), which is how it was
-  trained [12]
-- we tried it as a check: is the medical training what helps, or is it enough
-  for a model to be trained for similarity?
-
-what we saw: it does about as well as sapbert (see results below). mpnet was
-dropped from later work, and the head to head is clinicalbert vs sapbert only.
-
-## results
-
-best f1 from the full grid (relative cutoff, same grid for every model):
-
-| model | icd-9 to icd-10-ca | icd-9 to icda-8 |
-|---|---|---|
-| clinicalbert, original matrices | 0.423 | 0.716 |
-| clinicalbert, best text version | 0.478 | 0.722 |
-| sapbert | 0.552 | 0.761 |
-| mpnet | 0.540 | 0.741 |
-
-from `results/grid/full_grid_best.csv`.
-
-head to head on icd-9 to icd-10-ca, same top n and rule 4 for both, only the
-fixed cutoff differs (`results/head_to_head/clinicalbert_vs_sapbert.xlsx`):
-
-| | cutoff | precision | recall | f1 |
-|---|---|---|---|---|
-| clinicalbert | 0.95 | 0.557 | 0.362 | 0.439 |
-| sapbert | 0.60 | 0.658 | 0.464 | 0.544 |
-
-are the differences real? bootstrap over icd-9 codes, 2000 draws, comparing
-sapbert and mpnet (base text) against the original clinicalbert matrices
-(`results/tables/variability/bootstrap_deltas.csv`):
-
-| comparison | track | f1 difference | 95% range |
-|---|---|---|---|
-| sapbert minus clinicalbert | icd-9 to icd-10-ca | +0.101 | 0.079 to 0.123 |
-| sapbert minus clinicalbert | icd-9 to icda-8 | +0.046 | -0.002 to 0.095 |
-| mpnet minus sapbert | icd-9 to icd-10-ca | +0.003 | -0.016 to 0.022 |
-| mpnet minus sapbert | icd-9 to icda-8 | -0.021 | -0.066 to 0.023 |
-
-## the short version for the paper
-
-- clinicalbert was trained to read clinical notes, not to compare labels. its
-  scores all bunch together, so a cosine cutoff can't tell right from wrong
-- sapbert was trained on umls to put different names for the same medical
-  concept close together, which is the same job as matching code labels
-- on icd-9 to icd-10-ca sapbert beats clinicalbert by about 0.10 f1 and the
-  bootstrap range doesn't come near zero
-
-## weak spots to be ready for
-
-- **mpnet ties sapbert on icd-9 to icd-10-ca.** the gain comes from being
-  trained for similarity, and mpnet has that too. the case for sapbert is that
-  its training is medical and matches the task, not that it scored higher
-- **on icd-9 to icda-8 the lead is less certain.** sapbert is ahead in 97% of
-  bootstrap draws, but the 95% range just touches zero
-- **umls includes icd-9-cm and icd-10-cm**, so sapbert may have seen some of
-  these labels during training. that's fine for the task (it's what you'd want
-  in practice) but a reviewer might ask
-- **icd-10-ca is the canadian version.** umls has icd-10-cm (the us version),
-  not icd-10-ca. both are built on the who icd-10, so most three character
-  codes match, but not all
-- **the code number in the label hurt every model.** "250 diabetes mellitus"
-  scored worse than "diabetes mellitus", so the newer work uses labels without
-  the number (see `results/review/identical_labels.png`)
-
-## sources
+sources
 
 1. Alsentzer E, Murphy JR, Boag W, Weng WH, Jin D, Naumann T, McDermott MBA. Publicly Available Clinical BERT Embeddings. Clinical NLP Workshop, NAACL 2019. https://arxiv.org/abs/1904.03323
 2. Bio_ClinicalBERT model card. https://huggingface.co/emilyalsentzer/Bio_ClinicalBERT

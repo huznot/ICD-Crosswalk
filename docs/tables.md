@@ -1,8 +1,7 @@
 # tables
 
 every file in results/, what it is, and the script that makes it. `10_9` in a
-file name means icd-9 to icd-10-ca and `8_9` means icd-9 to icda-8. see
-[terms.md](terms.md) for what the words mean.
+file name means icd-9 to icd-10-ca and `8_9` means icd-9 to icda-8.
 
 ## workbooks
 

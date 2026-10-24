@@ -20,11 +20,14 @@ two migrations:
 | [all 130 ccs categories](results/workbooks/4_counts_by_ccs_category.xlsx) | icd-9 to icd-10-ca | counts per category |
 | [the 52 with no icda-8 match](results/review/52_codes_review.xlsx) | icd-9 to icda-8 | the 52 icd-9 codes the validation data says have no icda-8 code, and the scores with them kept in, at every cutoff and top n from 5 to 30 |
 
-in the docs folder:
+`10_9` in a file name means icd-9 to icd-10-ca, `8_9` means icd-9 to icda-8.
+the 52 are icd-9 codes the validation data says have no icda-8 code (the 9 are
+the same for icd-10-ca). keeping them in the scoring means any mapping the
+pipeline makes for one of them counts as a false positive.
 
-- [terms.md](docs/terms.md): what the tracks, the 9 and the 52, cutoffs, top n and rules mean
-- [models.md](docs/models.md): why clinicalbert, sapbert and mpnet, with sources
-- [tables.md](docs/tables.md): every other table and the script that makes it
+[docs/models.md](docs/models.md) has notes on why we looked at sapbert and mpnet
+instead of clinicalbert, with sources. [docs/tables.md](docs/tables.md) lists
+every other table and the script that makes it.
 
 ## running it
 
@@ -65,7 +68,7 @@ scripts/
   analysis/          one off analyses
   embeddings/        python that builds the similarity matrices
 tests/               test_pipeline.R and sanity_check.R
-docs/                terms, model choice with sources, list of every output
+docs/                model notes with sources, list of every output
 results/             everything the scripts produce
 run_all.R            rebuilds it all in dependency order
 ```
